@@ -27,9 +27,7 @@ export default function TabLayout() {
               {
                 minHeight: 60,
                 borderTopWidth: 2,
-                borderTopColor: props.accessibilityState?.selected
-                  ? colorTheme.primary
-                  : colorTheme.muted,
+                borderTopColor: props.accessibilityState?.selected ? colorTheme.primary : colorTheme.muted,
               },
             ]}
           />
@@ -52,9 +50,25 @@ export default function TabLayout() {
           title: 'Explore',
           tabBarItemStyle: { display: 'none' },
 
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
-          ),
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="yt-login"
+        options={{
+          title: 'Yt Login',
+          tabBarItemStyle: { display: 'none' },
+
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="collectionList"
+        options={{
+          title: 'Collection List',
+          tabBarItemStyle: { display: 'none' },
+
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
       <Tabs.Screen
@@ -62,9 +76,7 @@ export default function TabLayout() {
         options={{
           title: 'Search',
           tabBarItemStyle: { display: 'none' },
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="paperplane.fill" color={color} />
-          ),
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
         }}
       />
       <Tabs.Screen
@@ -73,9 +85,7 @@ export default function TabLayout() {
           title: 'Collection',
           tabBarItemStyle: { display: 'none' },
 
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
-          ),
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
       <Tabs.Screen
@@ -83,9 +93,7 @@ export default function TabLayout() {
         options={{
           title: 'Artist',
           tabBarItemStyle: { display: 'none' },
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
-          ),
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
       <Tabs.Screen
@@ -93,9 +101,7 @@ export default function TabLayout() {
         options={{
           title: 'Album',
           tabBarItemStyle: { display: 'none' },
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
-          ),
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
       <Tabs.Screen
@@ -103,19 +109,7 @@ export default function TabLayout() {
         options={{
           title: 'Playlist',
           tabBarItemStyle: { display: 'none' },
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="song"
-        options={{
-          title: 'Song',
-          tabBarItemStyle: { display: 'none' },
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
-          ),
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
     </Tabs>

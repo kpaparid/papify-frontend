@@ -1,17 +1,7 @@
 import { Colors } from '@/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
-import { ReactElement, useState } from 'react';
-import React from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  ImageSourcePropType,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, { useState } from 'react';
+import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function ListItem({
   onSave,
@@ -35,70 +25,79 @@ export default function ListItem({
   id: string;
   title: string;
   descriptions?: {
-    icon?: string;
+    icon?: keyof typeof Ionicons.glyphMap;
     text: string;
   }[];
-  imageUrl?: ImageSourcePropType;
+  imageUrl?: string;
   labels?: {
     text: string;
     isActive: boolean;
-    onClick: ({
-      id,
-      category,
-      value,
-    }: {
-      id: string;
-      category: string;
-      value: boolean;
-    }) => void;
+    onClick: ({ id, category, value }: { id: string; category: string; value: boolean }) => void;
   }[];
 }) {
-  const [status, setStatus] = useState({ error: false, loading: false });
+  const [status, setStatus] = useState<{ error: boolean; loading: boolean; action?: string }[]>([]);
+  // console.log('status', status);
 
-  const handleSaveTrack = async () => {
-    setStatus({ error: false, loading: true });
+  const updateStatus = (action: string, newStatus: { error: boolean; loading: boolean }) => {
+    setStatus(prevStatus => {
+      const updatedStatus = prevStatus.filter(s => s.action !== action);
+      return [...updatedStatus, { ...newStatus, action }];
+    });
+  };
+  // console.log(status);
+
+  const handleSave = async () => {
+    updateStatus('save', { error: false, loading: true });
     try {
       await onSave?.(id);
-      setStatus({ error: false, loading: false });
+      updateStatus('save', { error: false, loading: false });
     } catch {
-      setStatus({ error: true, loading: false });
+      updateStatus('save', { error: true, loading: false });
     }
   };
 
-  const handleDownloadTrack = async () => {
-    setStatus({ error: false, loading: true });
+  const handleDownload = async () => {
+    updateStatus('download', { error: false, loading: true });
     try {
       await onDownload?.(id);
-      setStatus({ error: false, loading: false });
+      updateStatus('download', { error: false, loading: false });
     } catch {
-      setStatus({ error: true, loading: false });
+      updateStatus('download', { error: true, loading: false });
     }
   };
 
-  const handleDeleteTrack = async () => {
-    setStatus({ error: false, loading: true });
+  const handleDelete = async () => {
+    updateStatus('delete', { error: false, loading: true });
     try {
       await onDelete?.(id);
-      setStatus({ error: false, loading: false });
+      updateStatus('delete', { error: false, loading: false });
     } catch {
-      setStatus({ error: true, loading: false });
+      updateStatus('delete', { error: true, loading: false });
     }
   };
+  const handleLabelToggle = async (labelId: string, toggleClickFn: () => Promise<void> | void) => {
+    // console.log('toggle label', labelId);
+    updateStatus(`labelToggle-${labelId}`, { error: false, loading: true });
+    try {
+      await toggleClickFn?.();
+      updateStatus(`labelToggle-${labelId}`, { error: false, loading: false });
+    } catch (error) {
+      console.error(error);
+      updateStatus(`labelToggle-${labelId}`, { error: true, loading: false });
+    }
+  };
+
+  const getStatus = (action: string) => status.find(s => s.action === action) || { error: false, loading: false };
   return (
     <TouchableOpacity style={styles.container} onPress={() => onClick?.(id)}>
       <View style={styles.horizontalItem}>
-        {imageUrl && (
-          <Image source={{ uri: imageUrl }} style={styles.horizontalImage} />
-        )}
+        {imageUrl && <Image source={{ uri: imageUrl }} style={styles.horizontalImage} />}
         <View style={styles.trackContainer}>
           <View style={styles.trackInfo}>
             <Text style={styles.trackTitle} numberOfLines={1}>
               {title}
             </Text>
-            <Text
-              style={[styles.trackArtist, { marginBottom: 2 }]}
-              numberOfLines={1}
-            >
+            <Text style={[styles.trackArtist, { marginBottom: 2 }]} numberOfLines={1}>
               <View style={styles.horizontalDetails}>
                 {descriptions?.map(({ icon, text }) => (
                   <View key={text} style={styles.tracksInfo}>
@@ -111,15 +110,21 @@ export default function ListItem({
             {labels && (
               <Text style={styles.trackArtist}>
                 <View style={styles.labelContainer}>
-                  {labels.map(({ text, isActive, onClick }) => (
+                  {labels.map(({ text, isActive, onClick }, index) => (
                     <TouchableOpacity
                       key={text}
                       onPress={() =>
-                        onClick({ id, category: text, value: !isActive })
+                        handleLabelToggle(`label_${text}_${index}`, () =>
+                          onClick({ id, category: text, value: !isActive }),
+                        )
                       }
                     >
                       <Text
-                        style={[styles.label, isActive && styles.activeLabel]}
+                        style={[
+                          styles.label,
+                          (isActive || getStatus(`label_${text}_${index}`).loading) && styles.activeLabel,
+                          // (isActive || getStatus(`labelToggle-${id}`).loading === true) && styles.activeLabel,
+                        ]}
                       >
                         {text}
                       </Text>
@@ -132,22 +137,14 @@ export default function ListItem({
 
           {onSave && typeof onSave !== 'undefined' && (
             <View style={styles.trackActions}>
-              <TouchableOpacity
-                onPress={handleSaveTrack}
-                style={styles.saveButton}
-                disabled={status.loading}
-              >
-                {status.loading ? (
+              <TouchableOpacity onPress={handleSave} style={styles.saveButton} disabled={getStatus('save').loading}>
+                {getStatus('save').loading ? (
                   <ActivityIndicator color="rgba(255, 255, 255, 0.3)" />
                 ) : (
                   <Ionicons
                     name={isSaved ? 'heart' : 'heart-outline'}
                     size={20}
-                    color={
-                      isSaved
-                        ? 'rgba(255, 255, 255, 0.8)'
-                        : 'rgba(255, 255, 255, 0.3)'
-                    }
+                    color={isSaved ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)'}
                   />
                 )}
               </TouchableOpacity>
@@ -156,42 +153,32 @@ export default function ListItem({
           {!isDownloaded && onDownload && typeof onDownload !== 'undefined' && (
             <View style={styles.trackActions}>
               <TouchableOpacity
-                onPress={handleDownloadTrack}
+                onPress={handleDownload}
                 style={styles.saveButton}
-                disabled={status.loading}
+                disabled={getStatus('download').loading}
               >
-                <Ionicons
-                  // name={'cloud-download-outline'}
-                  name="download-outline"
-                  size={20}
-                  color={
-                    isSaved
-                      ? 'rgba(255, 255, 255, 0.8)'
-                      : 'rgba(255, 255, 255, 0.3)'
-                  }
-                />
+                {getStatus('download').loading ? (
+                  <ActivityIndicator color="rgba(255, 255, 255, 0.3)" />
+                ) : (
+                  <Ionicons
+                    name="download-outline"
+                    size={20}
+                    color={isSaved ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)'}
+                  />
+                )}
               </TouchableOpacity>
             </View>
           )}
           {onDelete && typeof onDelete !== 'undefined' && (
             <View style={styles.trackActions}>
-              <TouchableOpacity
-                onPress={handleDeleteTrack}
-                style={styles.saveButton}
-                disabled={status.loading}
-              >
-                {status.loading ? (
+              <TouchableOpacity onPress={handleDelete} style={styles.saveButton} disabled={getStatus('delete').loading}>
+                {getStatus('delete').loading ? (
                   <ActivityIndicator color="rgba(255, 255, 255, 0.3)" />
                 ) : (
                   <Ionicons
                     name={'trash-outline'}
-                    // name={'cloud-download-outline'}
                     size={20}
-                    color={
-                      isSaved
-                        ? 'rgba(255, 255, 255, 0.8)'
-                        : 'rgba(255, 255, 255, 0.3)'
-                    }
+                    color={isSaved ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)'}
                   />
                 )}
               </TouchableOpacity>

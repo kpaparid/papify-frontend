@@ -9,7 +9,8 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kpapaeid.papifyfrontend"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +22,8 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.MANAGE_MEDIA",
         "android.permission.ACCESS_MEDIA_LOCATION"
-      ]
+      ],
+      "package": "com.kpapaeid.papifyfrontend"
     },
     "web": {
       "bundler": "metro",

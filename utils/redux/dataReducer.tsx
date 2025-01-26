@@ -8,6 +8,8 @@ import { SavedTrackType } from '@/types/saved-track-type';
 import { SearchResultType } from '@/types/search-types';
 import { YtTrackType } from '@/types/ytTrack-type';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { trackToFileName } from '../helpers';
+import { DeviceAlbumType } from '@/types/device-album-type';
 
 // Define a type for the slice state
 export interface DataStateType {
@@ -42,6 +44,10 @@ export interface DataStateType {
     ids: string[];
     loaded: boolean;
   };
+  deviceAlbums: {
+    byId: { [id: string]: DeviceAlbumType };
+    ids: string[];
+  };
 }
 
 // Define the initial state using that type
@@ -53,6 +59,7 @@ const initialState: DataStateType = {
   search: { byId: {}, ids: [], loaded: false },
   ytTracks: { byId: {}, ids: [], loaded: false },
   collection: { byId: {}, ids: [], loaded: false },
+  deviceAlbums: { byId: {}, ids: [] },
 };
 
 const dataSlice = createSlice({
@@ -103,16 +110,10 @@ const dataSlice = createSlice({
     setCollections: (state, action: PayloadAction<CollectionType[]>) => {
       const collection = action.payload;
       const ids = collection.map(({ name }: { name: string }) => name);
-      const byId = collection.reduce(
-        (
-          acc: { [key: string]: CollectionType },
-          collection: CollectionType,
-        ) => {
-          acc[collection.name] = collection;
-          return acc;
-        },
-        {},
-      );
+      const byId = collection.reduce((acc: { [key: string]: CollectionType }, collection: CollectionType) => {
+        acc[collection.name] = collection;
+        return acc;
+      }, {});
       state.collection.byId = byId;
       state.collection.ids = ids;
       state.collection.loaded = true;
@@ -121,10 +122,7 @@ const dataSlice = createSlice({
       const collections = action.payload;
       state.collection.ids = collections.map(collection => collection.name);
       state.collection.byId = collections.reduce(
-        (
-          acc: { [key: string]: CollectionType },
-          collection: CollectionType,
-        ) => {
+        (acc: { [key: string]: CollectionType }, collection: CollectionType) => {
           acc[collection.name] = collection;
           return acc;
         },
@@ -137,10 +135,7 @@ const dataSlice = createSlice({
       console.log({ collections });
       state.collection.ids = collections.map(collection => collection.name);
       state.collection.byId = collections.reduce(
-        (
-          acc: { [key: string]: CollectionType },
-          collection: CollectionType,
-        ) => {
+        (acc: { [key: string]: CollectionType }, collection: CollectionType) => {
           acc[collection.name] = collection;
           return acc;
         },
@@ -174,15 +169,12 @@ const dataSlice = createSlice({
       delete state.tracks.byId[trackId];
       state.tracks.ids = state.tracks.ids.filter(item => item !== trackId);
       state.collection.ids.forEach(collectionId => {
-        state.collection.byId[collectionId].trackIds = state.collection.byId[
-          collectionId
-        ].trackIds.filter(itemId => itemId !== trackId);
+        state.collection.byId[collectionId].tracks = state.collection.byId[collectionId].tracks.filter(
+          item => item.id !== trackId,
+        );
       });
     },
-    setCollectionTracks: (
-      state,
-      action: PayloadAction<CollectionTracksType>,
-    ) => {
+    setCollectionTracks: (state, action: PayloadAction<CollectionTracksType>) => {
       const { tracks, collections } = action.payload;
       state.tracks.ids = tracks.map(track => track.id);
       state.tracks.byId = tracks.reduce(
@@ -194,10 +186,7 @@ const dataSlice = createSlice({
       );
       state.collection.ids = collections.map(collection => collection.name);
       state.collection.byId = collections.reduce(
-        (
-          acc: { [key: string]: CollectionType },
-          collection: CollectionType,
-        ) => {
+        (acc: { [key: string]: CollectionType }, collection: CollectionType) => {
           acc[collection.name] = collection;
           return acc;
         },
@@ -220,19 +209,46 @@ const dataSlice = createSlice({
         if (!track.collectionIds.includes(collectionId)) {
           track.collectionIds.push(collectionId);
         }
-        state.collection.byId[collectionId].trackIds.push(spotifyId);
-        state.collection.byId['Uncategorized'].trackIds = state.collection.byId[
-          'Uncategorized'
-        ].trackIds.filter(id => id !== spotifyId);
-      } else {
-        track.collectionIds = track.collectionIds.filter(
-          id => id !== collectionId,
+        state.collection.byId[collectionId].tracks.push({
+          id: spotifyId,
+          name: track.spotify.name,
+          artists: track.spotify.artists,
+          query: track.youtube[0].query,
+        });
+        state.collection.byId['Uncategorized'].tracks = state.collection.byId['Uncategorized'].tracks.filter(
+          track => track.id !== spotifyId,
         );
-        state.collection.byId[collectionId].trackIds = state.collection.byId[
-          collectionId
-        ].trackIds.filter(id => id !== spotifyId);
-        state.collection.byId['Uncategorized'].trackIds.push(spotifyId);
+      } else {
+        track.collectionIds = track.collectionIds.filter(id => id !== collectionId);
+        state.collection.byId[collectionId].tracks = state.collection.byId[collectionId].tracks.filter(
+          track => track.id !== spotifyId,
+        );
+        state.collection.byId['Uncategorized'].tracks.push({
+          id: spotifyId,
+          name: track.spotify.name,
+          artists: track.spotify.artists,
+          query: track.youtube[0].query,
+        });
       }
+    },
+    setDeviceTracks: (state, action: PayloadAction<DeviceAlbumType[]>) => {
+      console.log('Payload ', action.payload);
+      state.deviceAlbums.ids = action.payload.map(album => album.name);
+      state.deviceAlbums.byId = action.payload.reduce(
+        (acc, track) => {
+          acc[track.name] = track;
+          return acc;
+        },
+        {} as { [id: string]: DeviceAlbumType },
+      );
+    },
+    addDeviceTrack: (state, action: PayloadAction<string>) => {
+      const spotifyId = action.payload;
+      state.deviceTracks.ids.push(spotifyId);
+    },
+    removeDeviceTrack: (state, action: PayloadAction<string>) => {
+      const spotifyId = action.payload;
+      state.deviceTracks.ids = state.deviceTracks.ids.filter(id => id !== spotifyId);
     },
   },
 });
@@ -250,6 +266,9 @@ export const {
   removeSavedTrack,
   setCollectionTracks,
   toggleCollection,
+  setDeviceTracks,
+  addDeviceTrack,
+  removeDeviceTrack,
 } = dataSlice.actions;
 const dataReducer = dataSlice.reducer;
 export default dataReducer;

@@ -11,7 +11,6 @@ export interface SavedTrackType {
             artists: {
                 name: string;
                 id: string;
-                _id: string;
             }[];
             images: ImageSourcePropType[];
             release_date: string;
@@ -22,7 +21,6 @@ export interface SavedTrackType {
         artists: {
             name: string;
             id: string;
-            _id: string;
         }[];
     };
     youtube: {
@@ -33,7 +31,5 @@ export interface SavedTrackType {
         publish_date: string;
         images: ImageSourcePropType[];
         description: string;
-        _id: string;
     }[];
-    _id: string;
 }
