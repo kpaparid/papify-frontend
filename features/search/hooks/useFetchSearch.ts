@@ -8,20 +8,23 @@ import {
   setCollectionTracks,
 } from '@/utils/redux/dataReducer';
 import { useCallback } from 'react';
+import { ImageSourcePropType } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 
 const useFetchSearch = (query: string) => {
   const dispatch = useDispatch();
-  const [searchResult, loaded, tracksLoaded, savedTracks]: [
+  const [searchResult, loaded, tracksLoaded, savedTracks, imageUrl]: [
     SearchResultType,
     boolean,
     boolean,
     string[],
+    string | ImageSourcePropType
   ] = useSelector((state: { data: DataStateType }) => [
     state.data.search.byId[query as string],
     state.data.search.loaded,
     state.data.tracks.loaded,
     state.data.tracks.ids,
+    state.data.image.url
   ]);
 
   const handleFetch = useCallback(async () => {
@@ -48,7 +51,7 @@ const useFetchSearch = (query: string) => {
 
   const { loading, error } = useLoadData(handleFetch);
 
-  if (!searchResult || loading) return { loading, error, searchResult: null, savedTracks };
+  if (!searchResult || loading) return { loading, error, searchResult: null, savedTracks, imageUrl };
 
   const { id, topResult, tracks, albums, playlists, artists } = searchResult;
 
@@ -57,6 +60,7 @@ const useFetchSearch = (query: string) => {
     error,
     savedTracks,
     searchResult: { id, topResult, tracks, albums, playlists, artists },
+    imageUrl
   };
 };
 

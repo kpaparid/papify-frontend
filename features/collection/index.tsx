@@ -12,7 +12,7 @@ export default function Collection() {
   const { id } = useLocalSearchParams();
   const [addModalIsVisible, setAddModalIsVisible] = React.useState(false);
   const [moreModalIsVisible, setMoreModalIsVisible] = React.useState(false);
-  const { collection, tracks, deviceAlbums, loading, error, fetchData } = useFetchCollectionTracks();
+  const { collection, tracks, image, deviceAlbums, loading, error, fetchData } = useFetchCollectionTracks();
   const { onDelete, onDownload, onTrackClick, onCreateCollection, onToggleCategory, onMoveFiles } =
     useCollectionActions();
 
@@ -66,11 +66,12 @@ export default function Collection() {
     items: tracksByCollection[collectionId].map(track => ({
       id: track.id,
       isDownloaded: !allDeviceTracks.missingIds.includes(track.id),
+      downloadDisabled: !track.storage?.storageId,
+      loadingDownload: track.downloading,
       title: track.spotify.name,
       categories: track.collectionIds,
       mergedCategories: track.collectionIds.join(', '),
       mergedArtists: track.spotify.artists.map(artist => artist.name).join(', '),
-      // imageUrl: byId[id].images[0],
       descriptions: [
         {
           text: track.spotify.artists.map(artist => artist.name).join(', '),
@@ -93,11 +94,7 @@ export default function Collection() {
         search
         searchKeys={['title', 'mergedCategories', 'mergedArtists']}
         buttonTabStyle
-        backgroundImage={
-          tracks.ids.length > 0
-            ? tracks.byId[tracks.ids[Math.floor(Math.random() * tracks.ids.length)]].spotify.album.images[0]
-            : undefined
-        }
+        backgroundImage={image.loaded && tracks.ids.length > 0 ? image.url : undefined}
         onAdd={() => setAddModalIsVisible(true)}
         onMore={() => setMoreModalIsVisible(true)}
         defaultTab={tabs.findIndex(tab => tab.title === id) !== -1 ? tabs.findIndex(tab => tab.title === id) : 0}

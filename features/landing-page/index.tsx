@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  ImageBackground,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -15,10 +16,11 @@ import {
 } from 'react-native';
 import { EmptyState } from './empty-state';
 import useFetchLandingPage from './hooks/useFetchLandingPage';
+import { BlurView } from 'expo-blur';
 
 export default function Home({ mode }: { mode: boolean }) {
-  const { collections, loading, error, deviceAlbums, fetchData } = useFetchLandingPage();
-  console.log({ deviceAlbums });
+  const { collections, loading, error, deviceAlbums, imageUrl, fetchData } = useFetchLandingPage();
+  console.log({ collections });
   const [searchLoading, setSearchLoading] = useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
 
@@ -38,6 +40,7 @@ export default function Home({ mode }: { mode: boolean }) {
     onDeleteCollection,
     syncDeviceTracks,
     onCookieClick,
+    onDownloadClick,
   } = useApi();
   const [searchText, setSearchText] = useState<string | null>(null);
   function handleSearchChange(text: string) {
@@ -63,37 +66,41 @@ export default function Home({ mode }: { mode: boolean }) {
     onCreateCollection(title);
   }
 
-  async function handleDownloadTracks() {
-    // console.log(data);
-    const allData = deviceAlbums.byId['All'];
-    // console.log(allData.missingTracks);
-    try {
-      allData?.missingIds?.length > 0 &&
-        (await downloadTracks(
-          allData.missingIds.map(id => {
-            console.log(id);
-            const track = allData.byId[id];
-            console.log(track);
-            return {
-              id: track.id,
-              filename: trackToFileName(track.query),
-            };
-          }),
-        ));
-      console.log('finished downloading');
-      syncDeviceTracks();
-    } catch (error) {
-      console.error(error);
-    }
-  }
+  // async function handleDownloadTracks() {
+  //   // console.log(data);
+  //   const allData = deviceAlbums.byId['All'];
+  //   // console.log(allData.missingTracks);
+  //   try {
+  //     allData?.missingIds?.length > 0 &&
+  //       (await downloadTracks(
+  //         allData.missingIds.map(id => {
+  //           console.log(id);
+  //           const track = allData.byId[id];
+  //           console.log(track);
+  //           return {
+  //             id: track.id,
+  //             filename: trackToFileName(track.query),
+  //           };
+  //         }),
+  //       ));
+  //     console.log('finished downloading');
+  //     syncDeviceTracks();
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // }
 
   // console.log(device);
-  const deviceTracksNum = deviceAlbums.byId['All'];
+  // const deviceTracksNum = deviceAlbums.byId['All'];
   // const deviceTracksNum = deviceAlbums?.find(({ name }) => name === 'All');
   const missingAlbumTracks = Object.values(deviceAlbums.byId)?.filter(({ missingIds }) => missingIds.length > 0).length;
+  console.log(deviceAlbums.byId);
+  // console.log(Object.values(missingAlbumTracks.byId['All'].byId).some(()));
   return (
     // style={styles.container} contentContainerStyle={styles.contentContainer}
     <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+      {/* <ImageBackground source={{ uri: imageUrl }} style={styles.container} blurRadius={150}> */}
+      {/* <BlurView intensity={125} blurReductionFactor={4} style={StyleSheet.absoluteFill} tint="dark" /> */}
       <View style={[styles.content]}>
         {/* Header */}
         <View style={styles.header}>
@@ -131,22 +138,17 @@ export default function Home({ mode }: { mode: boolean }) {
             ) : (
               <>
                 <Text style={styles.sectionTitle}>Your Device</Text>
-                <NavButton
-                  title="Yt Cookie"
-                  subtitle="Sync Cookie"
-                  // subtitle={missingAlbumTracks ? `${missingAlbumTracks} albums need sync` : `All albums synced`}
-                  onPress={onCookieClick}
-                  // nestedIcon={missingAlbumTracks ? 'refresh-outline' : 'checkmark-outline'}
-                  // onNestedPress={onCookieClick}
-                />
+                {/* <NavButton title="Downloads" subtitle="tracks to download" onPress={onDownloadClick} /> */}
+                <NavButton title="Yt Cookie" subtitle="Sync Cookie" onPress={onCookieClick} />
                 <NavButton
                   title="External Device"
-                  subtitle={missingAlbumTracks ? `${missingAlbumTracks} albums need sync` : `All albums synced`}
+                  subtitle={`Move tracks to External Device`}
                   // onPress={handleCreateDeviceAlbums}
-                  nestedIcon={missingAlbumTracks ? 'refresh-outline' : 'checkmark-outline'}
+                  nestedIcon={'refresh-outline'}
+                  nestedDisabled={collections.byId['All'].tracks.some(({ storage }) => !storage)}
                   onNestedPress={moveFiles2}
                 />
-                <NavButton
+                {/* <NavButton
                   title="Tracks"
                   subtitle={
                     deviceTracksNum?.missingIds.length > 0
@@ -156,12 +158,13 @@ export default function Home({ mode }: { mode: boolean }) {
                   onPress={() => null}
                   nestedIcon={deviceTracksNum?.missingIds.length > 0 ? 'download-outline' : 'checkmark-outline'}
                   onNestedPress={handleDownloadTracks}
-                />
+                /> */}
                 <NavButton
                   title="Albums"
                   subtitle={missingAlbumTracks ? `${missingAlbumTracks} albums need sync` : `All albums synced`}
                   // onPress={handleCreateDeviceAlbums}
                   nestedIcon={missingAlbumTracks ? 'refresh-outline' : 'checkmark-outline'}
+                  nestedDisabled={collections.byId['All'].tracks.some(({ storage }) => !storage)}
                   onNestedPress={handleCreateDeviceAlbums}
                 />
 
@@ -174,9 +177,9 @@ export default function Home({ mode }: { mode: boolean }) {
                     subtitle={`${collections.byId[collectionId].tracks.length} tracks`}
                     onPress={() => onCollectionClick(collectionId)}
                     nestedIcon="trash-outline"
-                    nestedDisabled={collectionId === 'Uncategorized' || collectionId === 'All'}
+                    // nestedDisabled={collectionId === 'Uncategorized' || collectionId === 'All'}
                     onNestedPress={() => {
-                      onDeleteCollection(collectionId);
+                      collectionId !== 'Uncategorized' && collectionId !== 'All' && onDeleteCollection(collectionId);
                     }}
                   />
                 ))}
@@ -185,6 +188,7 @@ export default function Home({ mode }: { mode: boolean }) {
           </View>
         )}
       </View>
+      {/* </ImageBackground> */}
     </ScrollView>
   );
 }
@@ -216,7 +220,7 @@ const NavButton = ({
               name={nestedIcon}
               size={20}
               color="#666"
-              style={(styles.playButton, { opacity: nestedDisabled ? 0 : 1 })}
+              style={(styles.playButton, { opacity: nestedDisabled ? 0.5 : 1 })}
             />
           </TouchableOpacity>
         </View>

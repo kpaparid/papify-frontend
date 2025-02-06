@@ -54,11 +54,18 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="download"
+        options={{
+          title: 'Download',
+          tabBarItemStyle: { display: 'none' },
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="yt-login"
         options={{
           title: 'Yt Login',
           tabBarItemStyle: { display: 'none' },
-
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />

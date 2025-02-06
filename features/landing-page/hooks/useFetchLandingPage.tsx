@@ -9,6 +9,7 @@ export default function useFetchLandingPage() {
   const collection = useSelector((state: { data: DataStateType }) => state.data.collection);
   const tracks = useSelector((state: { data: DataStateType }) => state.data.tracks);
   const deviceAlbums = useSelector((state: { data: DataStateType }) => state.data.deviceAlbums);
+  const image = useSelector((state: { data: DataStateType }) => state.data.image);
 
   const handleFetch = useCallback(async () => {
     const collectionData = collection.loaded
@@ -21,5 +22,5 @@ export default function useFetchLandingPage() {
   }, [collection]);
 
   const { loading, error, fetchData } = useLoadData(handleFetch);
-  return { collections: collection, loading, error, deviceAlbums, tracks, fetchData };
+  return { collections: collection, loading, error, deviceAlbums, tracks, imageUrl: image.url, fetchData };
 }

@@ -12,4 +12,10 @@ export interface TracksCollectionType {
         name: string;
     }[];
     query: string;
+    storage: {
+        storageId: string,
+        name: string,
+        size: number,
+        createdTime: Date,
+      },
 }

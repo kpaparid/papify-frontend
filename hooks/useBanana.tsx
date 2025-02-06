@@ -80,16 +80,15 @@ const useApi = () => {
 
   const onToggleSaveTrack = async (itemId: string, value: boolean) => {
     if (value) {
-      return await saveTrack(itemId).then(result => dispatch(addSavedTrack(result)));
+      return await saveTrack(itemId).then(result => {
+        console.log(result);
+        return dispatch(addSavedTrack(result));
+      });
     } else {
       return await deleteTrack(itemId).then(() => {
         dispatch(removeSavedTrack(itemId));
       });
     }
-  };
-  const onSaveTrack = async (itemId: string) => {
-    console.log('save track: ', itemId);
-    return await saveTrack(itemId).then(result => dispatch(addSavedTrack(result)));
   };
   const onCreateCollection = async (title: string) => {
     return await postCollection(title).then(result => dispatch(addCollection(result)));
@@ -107,6 +106,9 @@ const useApi = () => {
   const onCookieClick = () => {
     router.push('/yt-login');
   };
+  const onDownloadClick = () => {
+    router.push('/download');
+  };
   const onToggleCollection = async (spotifyId: string, collectionId: string, value: boolean) => {
     return await toggleTrackCollection(spotifyId, collectionId, value).then(result => {
       dispatch(toggleCollection({ spotifyId, collectionId, value }));
@@ -120,7 +122,6 @@ const useApi = () => {
     onAlbumClick,
     onPlaylistClick,
     onTrackClick,
-    onSaveTrack,
     onArtistClick,
     onSearchClick,
     onCreateCollection,
@@ -131,6 +132,7 @@ const useApi = () => {
     onCollectionModeClick,
     syncDeviceTracks,
     onCookieClick,
+    onDownloadClick,
   };
 };
 

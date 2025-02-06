@@ -18,7 +18,6 @@ const BACKEND_API = 'https://papify-backend.onrender.com/api';
 
 const getRequest = (url: string) => fetch(BACKEND_API + url).then(response => response.json());
 const postRequest = (url: string, data?: any) => {
-  console.log(JSON.stringify(data));
   return fetch(BACKEND_API + url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -110,16 +109,16 @@ export async function downloadTrack(id: string, filename: string) {
   const fileUriLocal = FileSystem.documentDirectory + filename;
   const fileInfo = await FileSystem.getInfoAsync(fileUriLocal);
   if (fileInfo.exists) {
+    await FileSystem.deleteAsync(fileUriLocal);
+
     console.log('File already exists, skipping download:', filename);
-    return moveMp3(filename); // Exit the function early
-  } else {
-    const callback = downloadProgress => {
-      const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
-      console.log(progress);
-    };
-    const downloadResumable = FileSystem.createDownloadResumable(fileUri, fileUriLocal, {}, callback);
-    return downloadResumable.downloadAsync().then(() => moveMp3(filename));
   }
+  const callback = (downloadProgress: FileSystem.DownloadProgressData) => {
+    const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
+    console.log(progress);
+  };
+  const downloadResumable = FileSystem.createDownloadResumable(fileUri, fileUriLocal, {}, callback);
+  return downloadResumable.downloadAsync().then(() => moveMp3(filename));
 }
 
 export async function downloadTracks(tracks: { id: string; filename: string }[]) {
@@ -336,6 +335,15 @@ export async function moveFiles2() {
 
     // Get all albums
     const allAlbums = await MediaLibrary.getAlbumsAsync();
+
+    // Filter albums that start with 'Papify '
+    const copyAlbums = allAlbums.filter(album => album.title.startsWith('Copy_Papify '));
+
+    for (let album of copyAlbums) {
+      // Delete the album
+      await MediaLibrary.deleteAlbumsAsync([album.id]);
+      console.log(`Deleted album: ${album.title}`);
+    }
 
     // Filter albums that start with 'Papify '
     const papifyAlbums = allAlbums.filter(album => album.title.startsWith('Papify '));

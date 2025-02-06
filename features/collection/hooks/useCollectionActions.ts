@@ -14,9 +14,9 @@ export const useCollectionActions = () => {
   };
 
   const onDownload = (track: SavedTrackType) => {
-    if (!track) return;
+    if (!(track && track.id && track?.storage?.name)) return;
   //  return downloadTrack(track.id, trackToFileName(track.youtube[0].query)).then(()=>dispatch(addDeviceTrack(track.id)));
-  return downloadTrack(track.id, trackToFileName(track.youtube[0].query)).then(() => syncDeviceTracks());
+  return downloadTrack(track.id, track.storage.name).then(() => syncDeviceTracks());
   };
 
   const onClick = (track: SavedTrackType) => {

@@ -23,6 +23,13 @@ export interface SavedTrackType {
             id: string;
         }[];
     };
+    downloading?: boolean;
+    storage?: {
+        storageId: string
+        name: string
+        size: number
+        createdTime: Date;
+    }
     youtube: {
         query: string;
         spotifyId: string;

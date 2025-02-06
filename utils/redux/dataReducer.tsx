@@ -3,13 +3,13 @@ import { AlbumType } from '@/types/album-type';
 import { ArtistProfileType } from '@/types/artist-type';
 import CollectionTracksType from '@/types/collection-tracks-type';
 import { CollectionType } from '@/types/collection-type';
+import { DeviceAlbumType } from '@/types/device-album-type';
 import { PlaylistType } from '@/types/playlist-type';
 import { SavedTrackType } from '@/types/saved-track-type';
 import { SearchResultType } from '@/types/search-types';
 import { YtTrackType } from '@/types/ytTrack-type';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { trackToFileName } from '../helpers';
-import { DeviceAlbumType } from '@/types/device-album-type';
+import { ImageSourcePropType } from 'react-native';
 
 // Define a type for the slice state
 export interface DataStateType {
@@ -48,6 +48,10 @@ export interface DataStateType {
     byId: { [id: string]: DeviceAlbumType };
     ids: string[];
   };
+  image: {
+    url?: string | ImageSourcePropType;
+    loaded: boolean;
+  };
 }
 
 // Define the initial state using that type
@@ -60,12 +64,17 @@ const initialState: DataStateType = {
   ytTracks: { byId: {}, ids: [], loaded: false },
   collection: { byId: {}, ids: [], loaded: false },
   deviceAlbums: { byId: {}, ids: [] },
+  image: { loaded: false },
 };
 
 const dataSlice = createSlice({
   name: 'data',
   initialState,
   reducers: {
+    setImage: (state, action: PayloadAction<string | ImageSourcePropType>) => {
+      state.image.url = action.payload;
+      state.image.loaded = true;
+    },
     addAlbum: (state, action: PayloadAction<AlbumType>) => {
       const album = action.payload;
       state.albums.byId[album.id] = album;
@@ -97,6 +106,8 @@ const dataSlice = createSlice({
         state.search.ids.push(searchResult.id);
       }
       state.search.loaded = true;
+      state.image.loaded = true;
+      state.image.url = searchResult.topResult.images?.[0] || searchResult.topResult.album?.images?.[0];
     },
     addYtTrack: (state, action: PayloadAction<YtTrackType[]>) => {
       const ytTracks = action.payload;
@@ -269,6 +280,7 @@ export const {
   setDeviceTracks,
   addDeviceTrack,
   removeDeviceTrack,
+  setImage,
 } = dataSlice.actions;
 const dataReducer = dataSlice.reducer;
 export default dataReducer;

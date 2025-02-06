@@ -4,17 +4,9 @@ import { useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import useFetchSearch from './hooks/useFetchSearch';
 export default function Search() {
-  const {
-    onAlbumClick,
-    onPlaylistClick,
-    onTrackClick,
-    onArtistClick,
-    onToggleSaveTrack,
-  } = useApi();
+  const { onAlbumClick, onPlaylistClick, onTrackClick, onArtistClick, onToggleSaveTrack } = useApi();
   const { query } = useLocalSearchParams();
-  const { searchResult, loading, error, savedTracks } = useFetchSearch(
-    query as string,
-  );
+  const { searchResult, loading, error, savedTracks, imageUrl } = useFetchSearch(query as string);
   if (loading || !searchResult || error || !savedTracks) return null;
   const { topResult, tracks, artists, albums, playlists } = searchResult;
 
@@ -64,7 +56,7 @@ export default function Search() {
   return (
     <List
       title={topResult.name}
-      image={topResult.images?.[0] || topResult.album?.images?.[0]}
+      image={imageUrl}
       tabs={[
         {
           title: 'Tracks',

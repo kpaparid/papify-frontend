@@ -13,6 +13,8 @@ export default function ListItem({
   imageUrl,
   labels,
   isDownloaded,
+  loadingDownload,
+  downloadDisabled,
   onDownload,
   onDelete,
 }: {
@@ -21,6 +23,8 @@ export default function ListItem({
   onSave?: (id: string) => Promise<void> | void;
   onClick?: (id: string) => Promise<void> | void;
   onDelete?: (id: string) => Promise<void> | void;
+  loadingDownload?: boolean;
+  downloadDisabled?: boolean;
   isSaved?: boolean;
   id: string;
   title: string;
@@ -154,8 +158,8 @@ export default function ListItem({
             <View style={styles.trackActions}>
               <TouchableOpacity
                 onPress={handleDownload}
-                style={styles.saveButton}
-                disabled={getStatus('download').loading}
+                style={[styles.saveButton, downloadDisabled && { opacity: 0.4 }]}
+                disabled={getStatus('download').loading || downloadDisabled}
               >
                 {getStatus('download').loading ? (
                   <ActivityIndicator color="rgba(255, 255, 255, 0.3)" />
@@ -169,7 +173,7 @@ export default function ListItem({
               </TouchableOpacity>
             </View>
           )}
-          {onDelete && typeof onDelete !== 'undefined' && (
+          {!loadingDownload && onDelete && typeof onDelete !== 'undefined' && (
             <View style={styles.trackActions}>
               <TouchableOpacity onPress={handleDelete} style={styles.saveButton} disabled={getStatus('delete').loading}>
                 {getStatus('delete').loading ? (
@@ -181,6 +185,13 @@ export default function ListItem({
                     color={isSaved ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)'}
                   />
                 )}
+              </TouchableOpacity>
+            </View>
+          )}
+          {loadingDownload && (
+            <View style={styles.trackActions}>
+              <TouchableOpacity onPress={handleDownload} style={styles.saveButton} disabled={true}>
+                <ActivityIndicator color="rgba(255, 255, 255, 0.3)" />
               </TouchableOpacity>
             </View>
           )}

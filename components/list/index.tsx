@@ -49,7 +49,7 @@ export default function List({
 }: {
   image?: ImageSourcePropType;
   backgroundImage?: ImageSourcePropType;
-  title: string;
+  title?: string;
   subtitle?: ReactNode;
   description?: string[];
   search?: boolean;
@@ -58,8 +58,9 @@ export default function List({
   onMore?: () => void | Promise<void>;
   buttonTabStyle?: boolean;
   defaultTab?: number;
+  onRefresh?: () => void | Promise<void>;
   tabs?: {
-    title: string;
+    title?: string;
     onSave?: (id: string) => void | Promise<void>;
     onClick?: (id: string) => void | Promise<void>;
     onDownload?: (id: string) => void | Promise<void>;
@@ -112,7 +113,7 @@ export default function List({
 
   return (
     <ImageBackground source={{ uri: backgroundImage }} style={styles.container} blurRadius={150}>
-      <BlurView intensity={90} style={StyleSheet.absoluteFill} tint="dark" />
+      <BlurView intensity={125} blurReductionFactor={4} style={StyleSheet.absoluteFill} tint="dark" />
 
       <SafeAreaView style={styles.content}>
         <ScrollView refreshControl={onRefresh && <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
@@ -197,54 +198,19 @@ export default function List({
                 ))}
               </View>
             )}
-            {
-              tabs &&
-                (data.length === 0 && tabs[activeTabIndex]?.emptyComponent
-                  ? tabs[activeTabIndex].emptyComponent
-                  : data.map((item, index) => (
-                      <ListItem
-                        {...item}
-                        onSave={tabs[activeTabIndex].onSave}
-                        onDownload={tabs[activeTabIndex].onDownload}
-                        onClick={tabs[activeTabIndex].onClick}
-                        onDelete={tabs[activeTabIndex].onDelete}
-                        key={index}
-                      />
-                    )))
-              // <FlatList
-              //   data={data}
-              //   // data={tabs[activeTabIndex].items}
-              //   renderItem={({ item }) => (
-              //     <ListItem
-              //       {...item}
-              //       onSave={tabs[activeTabIndex].onSave}
-              //       onDownload={tabs[activeTabIndex].onDownload}
-              //       onClick={tabs[activeTabIndex].onClick}
-              //       onDelete={tabs[activeTabIndex].onDelete}
-              //     />
-              //   )}
-              //   keyExtractor={item => item.id}
-              // />
-            }
-            {/* {tabs &&
-              (data.length === 0 && tabs[activeTabIndex]?.emptyComponent ? (
-                tabs[activeTabIndex].emptyComponent
-              ) : (
-                <FlatList
-                  data={data}
-                  // data={tabs[activeTabIndex].items}
-                  renderItem={({ item }) => (
+            {tabs &&
+              (data.length === 0 && tabs[activeTabIndex]?.emptyComponent
+                ? tabs[activeTabIndex].emptyComponent
+                : data.map((item, index) => (
                     <ListItem
                       {...item}
                       onSave={tabs[activeTabIndex].onSave}
                       onDownload={tabs[activeTabIndex].onDownload}
                       onClick={tabs[activeTabIndex].onClick}
                       onDelete={tabs[activeTabIndex].onDelete}
+                      key={index}
                     />
-                  )}
-                  keyExtractor={item => item.id}
-                />
-              ))} */}
+                  )))}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -357,7 +323,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
     width: '100%',
     // height: '90%',
     height: '100%',
