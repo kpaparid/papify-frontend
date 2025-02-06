@@ -1,0 +1,6 @@
+<!-- @info Include <code>xmlns:android="..."</code> to use <code>android:*</code> properties like <code>android:name</code> in your manifest. -->
+<manifest package="expo.modules.movefile" xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+</manifest>

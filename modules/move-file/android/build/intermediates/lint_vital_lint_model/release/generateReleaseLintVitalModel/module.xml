@@ -1,0 +1,18 @@
+<lint-module
+    format="1"
+    dir="/mnt/c/Users/kpaparidis/Documents/GitHub/papify-frontend/modules/move-file/android"
+    name=":move-file"
+    type="LIBRARY"
+    maven="expo.modules.movefile:move-file:0.6.3"
+    agpVersion="8.6.0"
+    buildFolder="build"
+    bootClassPath="/usr/lib/android-sdk/platforms/android-35/android.jar:/usr/lib/android-sdk/build-tools/34.0.0/core-lambda-stubs.jar"
+    javaSourceLevel="17"
+    compileTarget="android-35"
+    neverShrinking="true">
+  <lintOptions
+      absolutePaths="true"
+      checkReleaseBuilds="true"
+      explainIssues="true"/>
+  <variant name="release"/>
+</lint-module>
