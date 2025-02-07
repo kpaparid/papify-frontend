@@ -1,8 +1,6 @@
 import { downloadTrack, moveFiles } from '@/api/callbacks';
 import useApi from '@/hooks/useBanana';
 import { SavedTrackType } from '@/types/saved-track-type';
-import { trackToFileName } from '@/utils/helpers';
-import { addDeviceTrack } from '@/utils/redux/dataReducer';
 import { useDispatch } from 'react-redux';
 
 export const useCollectionActions = () => {
@@ -15,8 +13,7 @@ export const useCollectionActions = () => {
 
   const onDownload = (track: SavedTrackType) => {
     if (!(track && track.id && track?.storage?.name)) return;
-  //  return downloadTrack(track.id, trackToFileName(track.youtube[0].query)).then(()=>dispatch(addDeviceTrack(track.id)));
-  return downloadTrack(track.id, track.storage.name).then(() => syncDeviceTracks());
+  return downloadTrack(track).then(() => syncDeviceTracks());
   };
 
   const onClick = (track: SavedTrackType) => {

@@ -1,3 +1,4 @@
+import MoveFileModule from '@/modules/move-file';
 import { AlbumType } from '@/types/album-type';
 import { ArtistProfileType } from '@/types/artist-type';
 import CollectionTracksType from '@/types/collection-tracks-type';
@@ -6,13 +7,12 @@ import { PlaylistType } from '@/types/playlist-type';
 import { SavedTrackType } from '@/types/saved-track-type';
 import { SearchResultType } from '@/types/search-types';
 import { YtTrackType } from '@/types/ytTrack-type';
-import { batchDownload, trackToFileName } from '@/utils/helpers';
+import { batchDownload } from '@/utils/helpers';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
-import MoveFileModule from '@/modules/move-file';
 
-import { Alert } from 'react-native';
 import { DeviceAlbumType } from '@/types/device-album-type';
+import { Alert } from 'react-native';
 const BACKEND_API = 'https://papify-backend.onrender.com/api';
 // const BACKEND_API = 'http://localhost:5000/api';
 
@@ -172,7 +172,7 @@ const moveMp3 = async (fileName: string) => {
     console.log('File Info:', fileInfo3);
     const deleteAsset = await MediaLibrary.deleteAssetsAsync([asset]);
     console.log('File deletion result:', deleteAsset);
-    console.log('Filed moved to external storage', fileName);
+    console.log('File moved to external storage', fileName);
     // Alert.alert('Success', 'File deleted from internal storage!');
   } catch (error) {
     console.error(error);
@@ -235,7 +235,7 @@ export async function createDeviceAlbums(deviceAlbums: { byId: { [id: string]: D
       await downloadTracks(
         deviceAlbums.byId['All'].missingIds.map(trackId => ({
           id: deviceAlbums.byId['All'].byId[trackId].id,
-          filename: trackToFileName(deviceAlbums.byId['All'].byId[trackId].query),
+          filename: deviceAlbums.byId['All'].byId[trackId].storage?.name,
         })),
       );
       papifyAlbum = await MediaLibrary.getAlbumAsync('Papify All');
@@ -257,9 +257,8 @@ export async function createDeviceAlbums(deviceAlbums: { byId: { [id: string]: D
 
       // Find matching track
       const track = Object.values(deviceAlbums.byId['All'].byId).find(t => {
-        return trackToFileName(t.query) === asset.filename;
+        return t.storage?.name === asset.filename;
       }) as TracksCollectionType;
-      // const track = tracks.find(t => trackToFileName(t.query) === asset.filename);
 
       if (!track) {
         console.warn('No matching track found for:', asset.filename);
@@ -443,10 +442,7 @@ export async function checkDeviceTracks(collections: CollectionType[]): Promise<
       });
       const unknownAssets = unknownMedia.assets.filter(
         asset =>
-          !(
-            asset.mediaType === 'audio' &&
-            collection.tracks.some(track => trackToFileName(track.query) === asset.filename)
-          ),
+          !(asset.mediaType === 'audio' && collection.tracks.some(track => track?.storage.name === asset.filename)),
       );
       if (unknownAssets.length > 0) {
         console.log({ unknownAssets });
@@ -462,13 +458,14 @@ export async function checkDeviceTracks(collections: CollectionType[]): Promise<
         mediaType: MediaLibrary.MediaType.audio,
         first: 100000,
       });
+      console.log(media);
 
-      const existingTracks = new Set(media.assets.map(({ filename }) => filename));
+      const existingTracks = new Set([...media.assets.map(({ filename }) => filename)]);
       console.log({ existingTracks });
       const missingIds = [];
 
       for (const track of collection.tracks) {
-        const trackFilename = trackToFileName(track.query);
+        const trackFilename = track.storage?.name;
         if (!existingTracks.has(trackFilename)) {
           missingIds.push(track.id); // Add missing track ID
         }
@@ -520,9 +517,9 @@ export async function removeDeviceTrack(track: SavedTrackType, collectionIds: st
       mediaType: MediaLibrary.MediaType.audio,
     });
 
-    const existingTracks = new Set(media.assets.map(({ filename }) => filename));
+    const existingTracks = new Set([...media.assets.map(({ filename }) => filename)]);
 
-    const trackFilename = trackToFileName(track.youtube[0].query);
+    const trackFilename = track.storage?.name;
     if (existingTracks.has(trackFilename)) {
       const asset = media.assets.find(asset => asset.filename === trackFilename);
       if (asset) {

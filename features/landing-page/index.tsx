@@ -1,11 +1,9 @@
-import { createDeviceAlbums, downloadTracks, moveFiles2 } from '@/api/callbacks';
+import { createDeviceAlbums, moveFiles2 } from '@/api/callbacks';
 import useApi from '@/hooks/useBanana';
-import { trackToFileName } from '@/utils/helpers';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  ImageBackground,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -16,7 +14,6 @@ import {
 } from 'react-native';
 import { EmptyState } from './empty-state';
 import useFetchLandingPage from './hooks/useFetchLandingPage';
-import { BlurView } from 'expo-blur';
 
 export default function Home({ mode }: { mode: boolean }) {
   const { collections, loading, error, deviceAlbums, imageUrl, fetchData } = useFetchLandingPage();
@@ -66,29 +63,29 @@ export default function Home({ mode }: { mode: boolean }) {
     onCreateCollection(title);
   }
 
-  async function handleDownloadTracks() {
-    // console.log(data);
-    const allData = deviceAlbums.byId['All'];
-    // console.log(allData.missingTracks);
-    try {
-      allData?.missingIds?.length > 0 &&
-        (await downloadTracks(
-          allData.missingIds.map(id => {
-            console.log(id);
-            const track = allData.byId[id];
-            console.log(track);
-            return {
-              id: track.id,
-              filename: trackToFileName(track.query),
-            };
-          }),
-        ));
-      console.log('finished downloading');
-      syncDeviceTracks();
-    } catch (error) {
-      console.error(error);
-    }
-  }
+  // async function handleDownloadTracks() {
+  //   // console.log(data);
+  //   const allData = deviceAlbums.byId['All'];
+  //   // console.log(allData.missingTracks);
+  //   try {
+  //     allData?.missingIds?.length > 0 &&
+  //       (await downloadTracks(
+  //         allData.missingIds.map(id => {
+  //           console.log(id);
+  //           const track = allData.byId[id];
+  //           console.log(track);
+  //           return {
+  //             id: track.id,
+  //             filename: trackToFileName(track.query),
+  //           };
+  //         }),
+  //       ));
+  //     console.log('finished downloading');
+  //     syncDeviceTracks();
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // }
 
   // console.log(device);
   // const deviceTracksNum = deviceAlbums.byId['All'];
@@ -179,9 +176,11 @@ export default function Home({ mode }: { mode: boolean }) {
                     onPress={() => onCollectionClick(collectionId)}
                     nestedIcon="trash-outline"
                     // nestedDisabled={collectionId === 'Uncategorized' || collectionId === 'All'}
-                    onNestedPress={() => {
-                      collectionId !== 'Uncategorized' && collectionId !== 'All' && onDeleteCollection(collectionId);
-                    }}
+                    onNestedPress={
+                      collectionId === 'Uncategorized' || collectionId === 'All'
+                        ? null
+                        : () => onDeleteCollection(collectionId)
+                    }
                   />
                 ))}
               </>
@@ -207,28 +206,45 @@ const NavButton = ({
   onNestedPress?: () => void | Promise<void>;
   nestedIcon?: keyof typeof Ionicons.glyphMap;
   nestedDisabled?: boolean;
-}) => (
-  <TouchableOpacity onPress={onPress} style={styles.collectionButton}>
-    <View style={[styles.collectionItem]}>
-      <View>
-        <Text style={styles.collectionTitle}>{title}</Text>
-        <Text style={styles.collectionTracks}>{subtitle}</Text>
-      </View>
-      {onNestedPress && (
+}) => {
+  const [loading, setLoading] = useState(false);
+  const handleNestedPress = async () => {
+    setLoading(true);
+    try {
+      await onNestedPress?.();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  return (
+    <TouchableOpacity onPress={onPress} style={styles.collectionButton}>
+      <View style={[styles.collectionItem]}>
         <View>
-          <TouchableOpacity onPress={onNestedPress} disabled={nestedDisabled}>
-            <Ionicons
-              name={nestedIcon}
-              size={20}
-              color="#666"
-              style={(styles.playButton, { opacity: nestedDisabled ? 0.5 : 1 })}
-            />
-          </TouchableOpacity>
+          <Text style={styles.collectionTitle}>{title}</Text>
+          <Text style={styles.collectionTracks}>{subtitle}</Text>
         </View>
-      )}
-    </View>
-  </TouchableOpacity>
-);
+        {onNestedPress && (
+          <View>
+            <TouchableOpacity onPress={handleNestedPress} disabled={nestedDisabled}>
+              {loading ? (
+                <ActivityIndicator size={'small'} color="rgba(255,255,255,0.3)" />
+              ) : (
+                <Ionicons
+                  name={nestedIcon}
+                  size={20}
+                  color="#666"
+                  style={(styles.playButton, { opacity: nestedDisabled ? 0.5 : 1 })}
+                />
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 const styles = StyleSheet.create({
   separator: {
