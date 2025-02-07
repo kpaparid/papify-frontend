@@ -228,6 +228,7 @@ export async function createDeviceAlbums(deviceAlbums: { byId: { [id: string]: D
       mediaType: MediaLibrary.MediaType.audio,
     });
     console.log({ papifyAlbum });
+    console.log({ deviceAlbums });
 
     if (!papifyAlbum || deviceAlbums.byId['All'].missingIds.length > 0) {
       console.log('Creating Papify album...');

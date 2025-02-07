@@ -98,7 +98,7 @@ export default function ListItem({
         {imageUrl && <Image source={{ uri: imageUrl }} style={styles.horizontalImage} />}
         <View style={styles.trackContainer}>
           <View style={styles.trackInfo}>
-            <Text style={styles.trackTitle} numberOfLines={1}>
+            <Text style={[styles.trackTitle, !isDownloaded && { opacity: 0.35 }]} numberOfLines={1}>
               {title}
             </Text>
             <Text style={[styles.trackArtist, { marginBottom: 2 }]} numberOfLines={1}>
@@ -117,6 +117,7 @@ export default function ListItem({
                   {labels.map(({ text, isActive, onClick }, index) => (
                     <TouchableOpacity
                       key={text}
+                      disabled={loadingDownload}
                       onPress={() =>
                         handleLabelToggle(`label_${text}_${index}`, () =>
                           onClick({ id, category: text, value: !isActive }),
@@ -127,6 +128,7 @@ export default function ListItem({
                         style={[
                           styles.label,
                           (isActive || getStatus(`label_${text}_${index}`).loading) && styles.activeLabel,
+                          loadingDownload && { opacity: 0.35 },
                           // (isActive || getStatus(`labelToggle-${id}`).loading === true) && styles.activeLabel,
                         ]}
                       >
@@ -195,6 +197,19 @@ export default function ListItem({
               </TouchableOpacity>
             </View>
           )}
+          {/* <View style={styles.trackActions}>
+            <TouchableOpacity style={styles.saveButton} disabled={true}>
+              {loadingDownload ? (
+                <ActivityIndicator color="rgba(255, 255, 255, 0.3)" />
+              ) : (
+                <Ionicons
+                  name={'checkmark-circle-outline'}
+                  size={20}
+                  color={isDownloaded ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.3)'}
+                />
+              )}
+            </TouchableOpacity>
+          </View> */}
         </View>
       </View>
     </TouchableOpacity>

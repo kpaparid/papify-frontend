@@ -49,7 +49,7 @@ export default function Collection() {
   });
   const tabs = collectionIds.map(collectionId => ({
     title: collectionId,
-    onDownload: handleDownloadTrack,
+    // onDownload: handleDownloadTrack,
     onDelete,
     onClick: (itemId: string) => onTrackClick(tracks.byId[itemId]),
     emptyComponent: (
@@ -65,7 +65,7 @@ export default function Collection() {
     ),
     items: tracksByCollection[collectionId].map(track => ({
       id: track.id,
-      isDownloaded: !allDeviceTracks.missingIds.includes(track.id),
+      isDownloaded: track.storage?.storageId,
       downloadDisabled: !track.storage?.storageId,
       loadingDownload: track.downloading,
       title: track.spotify.name,

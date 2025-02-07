@@ -66,29 +66,29 @@ export default function Home({ mode }: { mode: boolean }) {
     onCreateCollection(title);
   }
 
-  // async function handleDownloadTracks() {
-  //   // console.log(data);
-  //   const allData = deviceAlbums.byId['All'];
-  //   // console.log(allData.missingTracks);
-  //   try {
-  //     allData?.missingIds?.length > 0 &&
-  //       (await downloadTracks(
-  //         allData.missingIds.map(id => {
-  //           console.log(id);
-  //           const track = allData.byId[id];
-  //           console.log(track);
-  //           return {
-  //             id: track.id,
-  //             filename: trackToFileName(track.query),
-  //           };
-  //         }),
-  //       ));
-  //     console.log('finished downloading');
-  //     syncDeviceTracks();
-  //   } catch (error) {
-  //     console.error(error);
-  //   }
-  // }
+  async function handleDownloadTracks() {
+    // console.log(data);
+    const allData = deviceAlbums.byId['All'];
+    // console.log(allData.missingTracks);
+    try {
+      allData?.missingIds?.length > 0 &&
+        (await downloadTracks(
+          allData.missingIds.map(id => {
+            console.log(id);
+            const track = allData.byId[id];
+            console.log(track);
+            return {
+              id: track.id,
+              filename: trackToFileName(track.query),
+            };
+          }),
+        ));
+      console.log('finished downloading');
+      syncDeviceTracks();
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   // console.log(device);
   // const deviceTracksNum = deviceAlbums.byId['All'];
@@ -150,13 +150,14 @@ export default function Home({ mode }: { mode: boolean }) {
                 />
                 {/* <NavButton
                   title="Tracks"
-                  subtitle={
-                    deviceTracksNum?.missingIds.length > 0
-                      ? `${deviceTracksNum?.missingIds.length} tracks to download `
-                      : `All tracks downloaded`
-                  }
+                  // subtitle={
+                  //   deviceTracksNum?.missingIds.length > 0
+                  //     ? `${deviceTracksNum?.missingIds.length} tracks to download `
+                  //     : `All tracks downloaded`
+                  // }
                   onPress={() => null}
-                  nestedIcon={deviceTracksNum?.missingIds.length > 0 ? 'download-outline' : 'checkmark-outline'}
+                  nestedIcon={'download-outline'}
+                  // nestedIcon={deviceTracksNum?.missingIds.length > 0 ? 'download-outline' : 'checkmark-outline'}
                   onNestedPress={handleDownloadTracks}
                 /> */}
                 <NavButton
