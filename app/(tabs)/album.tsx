@@ -1,5 +1,7 @@
 import Album from '@/features/album';
 
-export default function AlbumPage() {
+const AlbumPage = () => {
   return <Album />;
-}
+};
+
+export default AlbumPage;
