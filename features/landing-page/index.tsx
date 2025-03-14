@@ -1,6 +1,11 @@
 import { createDeviceAlbums, moveFiles2 } from '@/api/callbacks';
 import useApi from '@/hooks/useBanana';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  Feather,
+  FontAwesome,
+  Ionicons,
+  MaterialCommunityIcons,
+} from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,12 +19,15 @@ import {
 } from 'react-native';
 import { EmptyState } from './empty-state';
 import useFetchLandingPage from './hooks/useFetchLandingPage';
+import { IconSymbolName } from '@/components/ui/IconSymbol';
+import { EditCategoryModal } from './edit-category-modal';
 
 export default function Home({ mode }: { mode: boolean }) {
-  const { collections, loading, error, deviceAlbums, imageUrl, fetchData } = useFetchLandingPage();
-  console.log({ collections });
+  const { collections, loading, error, deviceAlbums, imageUrl, fetchData } =
+    useFetchLandingPage();
   const [searchLoading, setSearchLoading] = useState(false);
-  const [refreshing, setRefreshing] = React.useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [tabView, setTabView] = useState<'card' | 'list'>('card');
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -28,7 +36,6 @@ export default function Home({ mode }: { mode: boolean }) {
       setRefreshing(false);
     }, 2000);
   }, []);
-  // console.log(collections);
   const {
     onSearchClick,
     onCreateCollection,
@@ -37,8 +44,11 @@ export default function Home({ mode }: { mode: boolean }) {
     onDeleteCollection,
     syncDeviceTracks,
     onCookieClick,
+    onGoogleDriveClick,
     onDownloadClick,
+    onEditCollection,
   } = useApi();
+
   const [searchText, setSearchText] = useState<string | null>(null);
   function handleSearchChange(text: string) {
     setSearchText(text);
@@ -62,43 +72,33 @@ export default function Home({ mode }: { mode: boolean }) {
     if (collections.ids.includes(title)) return;
     onCreateCollection(title);
   }
+  const allMissingLength = Object.values(deviceAlbums.byId)?.reduce(
+    (acc, { missingIds }) => acc + missingIds.length,
+    0,
+  );
 
-  // async function handleDownloadTracks() {
-  //   // console.log(data);
-  //   const allData = deviceAlbums.byId['All'];
-  //   // console.log(allData.missingTracks);
-  //   try {
-  //     allData?.missingIds?.length > 0 &&
-  //       (await downloadTracks(
-  //         allData.missingIds.map(id => {
-  //           console.log(id);
-  //           const track = allData.byId[id];
-  //           console.log(track);
-  //           return {
-  //             id: track.id,
-  //             filename: trackToFileName(track.query),
-  //           };
-  //         }),
-  //       ));
-  //     console.log('finished downloading');
-  //     syncDeviceTracks();
-  //   } catch (error) {
-  //     console.error(error);
-  //   }
-  // }
+  const [editCategoryModal, setEditCategoryModal] = useState({
+    visible: false,
+    collectionId: '',
+  });
 
-  // console.log(device);
-  // const deviceTracksNum = deviceAlbums.byId['All'];
-  // const deviceTracksNum = deviceAlbums?.find(({ name }) => name === 'All');
-  const missingAlbumTracks = Object.values(deviceAlbums.byId)?.filter(({ missingIds }) => missingIds.length > 0).length;
-  console.log(deviceAlbums.byId);
-  // console.log(Object.values(missingAlbumTracks.byId['All'].byId).some(()));
   return (
-    // style={styles.container} contentContainerStyle={styles.contentContainer}
-    <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-      {/* <ImageBackground source={{ uri: imageUrl }} style={styles.container} blurRadius={150}> */}
-      {/* <BlurView intensity={125} blurReductionFactor={4} style={StyleSheet.absoluteFill} tint="dark" /> */}
-      <View style={[styles.content]}>
+    <ScrollView
+      /*************  ✨ Codeium Command 🌟  *************/
+      style={{ backgroundColor: '#060c12' }}
+      // style={{ backgroundColor: '#09131d' }}
+      /******  e8e3a61d-06f8-4508-b6b7-50138998334b  *******/
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
+      <EditCategoryModal
+        isVisible={editCategoryModal.visible}
+        collectionId={editCategoryModal.collectionId}
+        onSubmit={newCollectionId =>
+          onEditCollection(editCategoryModal.collectionId, newCollectionId)
+        }
+        onClose={() => setEditCategoryModal({ visible: false, collectionId: '' })}
+      />
+      <View style={[styles.content, { paddingTop: 50 }]}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Discover Your Music</Text>
@@ -110,12 +110,12 @@ export default function Home({ mode }: { mode: boolean }) {
           {searchLoading ? (
             <ActivityIndicator color="rgba(255,255,255,0.3)" style={styles.searchIcon} />
           ) : (
-            <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+            <Ionicons name="search" size={20} color="#777f87" style={styles.searchIcon} />
           )}
           <TextInput
             style={styles.searchInput}
             placeholder="Search tracks, artists, albums, or playlists..."
-            placeholderTextColor="#666"
+            placeholderTextColor="#777f87"
             onChangeText={handleSearchChange}
             submitBehavior="blurAndSubmit"
             onSubmitEditing={handleSearch}
@@ -125,8 +125,18 @@ export default function Home({ mode }: { mode: boolean }) {
 
         {/* Collections Section */}
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size={'large'} color="rgba(255,255,255,0.3)" />
+          <View style={{ height: '100%', width: '100%' }}>
+            <ActivityIndicator
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                margin: 'auto',
+              }}
+              color="rgba(255, 255, 255, 0.3)"
+              size="large"
+            />
           </View>
         ) : (
           <View style={styles.collectionsContainer}>
@@ -134,64 +144,225 @@ export default function Home({ mode }: { mode: boolean }) {
               <EmptyState onCreateCollection={handleCreateCollection} />
             ) : (
               <>
-                <Text style={styles.sectionTitle}>Your Device</Text>
-                {/* <NavButton title="Downloads" subtitle="tracks to download" onPress={onDownloadClick} /> */}
-                <NavButton title="Yt Cookie" subtitle="Sync Cookie" onPress={onCookieClick} />
-                <NavButton
-                  title="External Device"
-                  subtitle={`Move tracks to External Device`}
-                  // onPress={handleCreateDeviceAlbums}
-                  nestedIcon={'refresh-outline'}
-                  nestedDisabled={collections.byId['All'].tracks.some(({ storage }) => !storage)}
-                  onNestedPress={moveFiles2}
-                />
-                {/* <NavButton
-                  title="Tracks"
-                  // subtitle={
-                  //   deviceTracksNum?.missingIds.length > 0
-                  //     ? `${deviceTracksNum?.missingIds.length} tracks to download `
-                  //     : `All tracks downloaded`
-                  // }
-                  onPress={() => null}
-                  nestedIcon={'download-outline'}
-                  // nestedIcon={deviceTracksNum?.missingIds.length > 0 ? 'download-outline' : 'checkmark-outline'}
-                  onNestedPress={handleDownloadTracks}
-                /> */}
-                <NavButton
-                  title="Albums"
-                  subtitle={missingAlbumTracks ? `${missingAlbumTracks} albums need sync` : `All albums synced`}
-                  // onPress={handleCreateDeviceAlbums}
-                  nestedIcon={missingAlbumTracks ? 'refresh-outline' : 'checkmark-outline'}
-                  nestedDisabled={collections.byId['All'].tracks.some(({ storage }) => !storage)}
-                  onNestedPress={handleCreateDeviceAlbums}
-                />
-
-                <View style={styles.separator} />
-                <Text style={styles.sectionTitle}>Your Collections</Text>
-                {collections.ids.map(collectionId => (
-                  <NavButton
-                    key={collections.byId[collectionId].name}
-                    title={collections.byId[collectionId].name}
-                    subtitle={`${collections.byId[collectionId].tracks.length} tracks`}
-                    onPress={() => onCollectionClick(collectionId)}
-                    nestedIcon="trash-outline"
-                    // nestedDisabled={collectionId === 'Uncategorized' || collectionId === 'All'}
-                    onNestedPress={
-                      collectionId === 'Uncategorized' || collectionId === 'All'
-                        ? null
-                        : () => onDeleteCollection(collectionId)
-                    }
+                <View
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    gap: 5,
+                    paddingBottom: 30,
+                  }}
+                >
+                  <IconButton
+                    title="Cookie"
+                    onPress={onCookieClick}
+                    color="#fb2c36"
+                    iconName="youtube"
+                    iconType="material-community"
                   />
-                ))}
+                  <IconButton
+                    title="Tracks"
+                    onPress={onGoogleDriveClick}
+                    color="#2b7fff"
+                    iconName="google-drive"
+                    iconType="material-community"
+                  />
+                  <IconButton
+                    title="Move Tracks"
+                    onPress={moveFiles2}
+                    color="#efb100"
+                    iconName="folder-refresh"
+                    iconType="material-community"
+                  />
+                  <IconButton
+                    title={allMissingLength + ' Missing'}
+                    onPress={handleCreateDeviceAlbums}
+                    disabled={collections.byId['All'].tracks.some(
+                      ({ storage }) => !storage,
+                    )}
+                    color="#00c951"
+                    iconName="download"
+                    iconType="material-community"
+                  />
+                </View>
+                <View
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    width: '100%',
+                  }}
+                >
+                  <Text style={styles.sectionTitle}>Your Collections</Text>
+                  <View style={{ display: 'flex', flexDirection: 'row', gap: 5 }}>
+                    <TouchableOpacity
+                      onPress={() => setTabView('list')}
+                      style={{
+                        padding: 2,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        borderRadius: 8,
+                        backgroundColor: tabView === 'card' ? '#09131d' : '#0d1b2a',
+                        width: 32,
+                        height: 32,
+                      }}
+                    >
+                      <Feather
+                        name={'list'}
+                        style={[
+                          { textAlign: 'center' },
+                          tabView !== 'list' && { opacity: 0.5 },
+                        ]}
+                        size={16}
+                        color={'white'}
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setTabView('card')}
+                      style={{
+                        padding: 2,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        borderRadius: 8,
+                        backgroundColor: tabView === 'list' ? '#09131d' : '#0d1b2a',
+                        width: 32,
+                        height: 32,
+                      }}
+                    >
+                      <Feather
+                        name={'grid'}
+                        style={[
+                          { textAlign: 'center' },
+                          tabView !== 'card' && { opacity: 0.5 },
+                        ]}
+                        size={16}
+                        color={'white'}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                <View
+                  style={[
+                    tabView === 'card' && {
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      width: '100%',
+                      flexDirection: 'row',
+                      gap: tabView === 'card' ? '1%' : 0,
+                      justifyContent: 'space-between',
+                    },
+                  ]}
+                >
+                  {collections.ids.map(collectionId => (
+                    <View
+                      key={collections.byId[collectionId].name}
+                      style={{ width: tabView === 'card' ? '49%' : '100%' }}
+                    >
+                      <NavButton
+                        title={collections.byId[collectionId].name}
+                        subtitle={`${collections.byId[collectionId].tracks.length} tracks`}
+                        onPress={() => onCollectionClick(collectionId)}
+                        nestedIcon={['pencil', 'trash-outline']}
+                        centered={tabView === 'card'}
+                        onNestedPress={
+                          collectionId === 'Uncategorized' || collectionId === 'All'
+                            ? null
+                            : [
+                                () =>
+                                  setEditCategoryModal({ visible: true, collectionId }),
+                                () => onDeleteCollection(collectionId),
+                              ]
+                        }
+                      />
+                    </View>
+                  ))}
+                </View>
               </>
             )}
           </View>
         )}
       </View>
-      {/* </ImageBackground> */}
     </ScrollView>
   );
 }
+const IconButton = ({
+  title,
+  subtitle,
+  onPress,
+  children,
+  iconName,
+  iconType,
+  color,
+  disabled,
+}: {
+  title?: string;
+  subtitle?: string;
+  onPress?: () => void;
+  children?: React.ReactNode;
+  iconName?: IconSymbolName;
+  iconType?: string;
+  color: string;
+  disabled?: boolean;
+}) => {
+  const [loading, setLoading] = useState(false);
+  const handlePress = async () => {
+    setLoading(true);
+    try {
+      await onPress?.();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  return (
+    <TouchableOpacity
+      onPress={handlePress}
+      disabled={disabled}
+      style={{
+        padding: 5,
+        paddingVertical: 15,
+        borderRadius: 10,
+        backgroundColor: '#09131d',
+        borderColor: '#0b1825',
+        borderWidth: 1,
+        flex: 1,
+      }}
+    >
+      {loading ? (
+        <ActivityIndicator size={32} color="rgba(255,255,255,0.3)" />
+      ) : iconType === 'material-community' ? (
+        <MaterialCommunityIcons
+          name={iconName}
+          style={{ textAlign: 'center' }}
+          size={32}
+          color={color}
+        />
+      ) : iconType === 'font-awesome' ? (
+        <FontAwesome
+          name={iconName}
+          style={{ textAlign: 'center' }}
+          size={32}
+          color={color}
+        />
+      ) : (
+        <Feather
+          name={iconName}
+          style={{ textAlign: 'center' }}
+          size={32}
+          color={color}
+        />
+      )}
+      <View>
+        <Text style={{ paddingTop: 2, textAlign: 'center', color: '#fff', fontSize: 11 }}>
+          {title}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
 const NavButton = ({
   title,
   subtitle,
@@ -199,19 +370,21 @@ const NavButton = ({
   onNestedPress,
   nestedIcon,
   nestedDisabled,
+  centered,
 }: {
   title: string;
   subtitle: string;
   onPress?: () => void;
-  onNestedPress?: () => void | Promise<void>;
-  nestedIcon?: keyof typeof Ionicons.glyphMap;
+  onNestedPress?: (() => void | Promise<void>)[];
+  nestedIcon?: (keyof typeof Ionicons.glyphMap)[];
   nestedDisabled?: boolean;
+  centered?: boolean;
 }) => {
   const [loading, setLoading] = useState(false);
-  const handleNestedPress = async () => {
+  const handleNestedPress = async (index: number) => {
     setLoading(true);
     try {
-      await onNestedPress?.();
+      await onNestedPress?.[index]();
     } catch (error) {
       console.error(error);
     } finally {
@@ -220,25 +393,41 @@ const NavButton = ({
   };
   return (
     <TouchableOpacity onPress={onPress} style={styles.collectionButton}>
-      <View style={[styles.collectionItem]}>
-        <View>
-          <Text style={styles.collectionTitle}>{title}</Text>
-          <Text style={styles.collectionTracks}>{subtitle}</Text>
+      <View
+        style={[
+          styles.collectionItem,
+          centered ? { marginBottom: '3%' } : { marginBottom: '2%' },
+        ]}
+      >
+        <View style={[centered && { width: '100%' }]}>
+          <Text style={[styles.collectionTitle, centered && { textAlign: 'center' }]}>
+            {title}
+          </Text>
+          <Text style={[styles.collectionTracks, , centered && { textAlign: 'center' }]}>
+            {subtitle}
+          </Text>
         </View>
-        {onNestedPress && (
-          <View>
-            <TouchableOpacity onPress={handleNestedPress} disabled={nestedDisabled}>
-              {loading ? (
-                <ActivityIndicator size={'small'} color="rgba(255,255,255,0.3)" />
-              ) : (
-                <Ionicons
-                  name={nestedIcon}
-                  size={20}
-                  color="#666"
-                  style={(styles.playButton, { opacity: nestedDisabled ? 0.5 : 1 })}
-                />
-              )}
-            </TouchableOpacity>
+        {!centered && onNestedPress && (
+          <View style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
+            {nestedIcon?.map((icon, index) => (
+              <View key={`${icon}-${index}`}>
+                <TouchableOpacity
+                  onPress={() => handleNestedPress(index)}
+                  disabled={nestedDisabled}
+                >
+                  {loading ? (
+                    <ActivityIndicator size={'small'} color="rgba(255,255,255,0.3)" />
+                  ) : (
+                    <Ionicons
+                      name={icon}
+                      size={20}
+                      color="#666"
+                      style={(styles.playButton, { opacity: nestedDisabled ? 0.5 : 1 })}
+                    />
+                  )}
+                </TouchableOpacity>
+              </View>
+            ))}
           </View>
         )}
       </View>
@@ -249,7 +438,7 @@ const NavButton = ({
 const styles = StyleSheet.create({
   separator: {
     height: 1,
-    backgroundColor: '#333333',
+    backgroundColor: 'hsl(240 6% 20%)',
     marginVertical: 16,
     width: '100%',
   },
@@ -282,12 +471,14 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: '#a1a1aa',
+    color: '#777f87',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#18181b',
+    backgroundColor: '#09131d',
+    borderColor: '#0b1825',
+    borderWidth: 1,
     borderRadius: 16,
     paddingHorizontal: 16,
     marginBottom: 32,
@@ -297,12 +488,12 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: '#ffffff',
+    color: '#e1e3e4',
     fontSize: 16,
     paddingVertical: 12,
   },
   collectionsContainer: {
-    marginBottom: 32,
+    marginBottom: 42,
   },
   loadingContainer: {
     flex: 1,
@@ -315,16 +506,17 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: '#e4e4e7',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   collectionItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#18181b',
+    backgroundColor: '#09131d',
+    borderColor: '#0b1825',
+    borderWidth: 1,
     borderRadius: 12,
     padding: 16,
-    marginBottom: 12,
     width: '100%',
   },
   collectionTitle: {
@@ -334,7 +526,7 @@ const styles = StyleSheet.create({
   },
   collectionTracks: {
     fontSize: 14,
-    color: '#a1a1aa',
+    color: '#777f87',
     marginTop: 4,
   },
   playButton: {

@@ -7,12 +7,13 @@ export interface CollectionType {
 export interface TracksCollectionType {
     id: string;
     name: string;
+    images: ImageSourcePropType[]
     artists: {
         id: string;
         name: string;
     }[];
     query: string;
-    storage: {
+    storage?: {
         storageId: string,
         name: string,
         size: number,

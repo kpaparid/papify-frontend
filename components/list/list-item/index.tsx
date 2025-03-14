@@ -1,7 +1,14 @@
 import { Colors } from '@/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 export default function ListItem({
   onSave,
@@ -36,19 +43,42 @@ export default function ListItem({
   labels?: {
     text: string;
     isActive: boolean;
-    onClick: ({ id, category, value }: { id: string; category: string; value: boolean }) => void;
+    onClick: ({
+      id,
+      category,
+      value,
+    }: {
+      id: string;
+      category: string;
+      value: boolean;
+    }) => void;
   }[];
 }) {
-  const [status, setStatus] = useState<{ error: boolean; loading: boolean; action?: string }[]>([]);
+  const [status, setStatus] = useState<
+    { error: boolean; loading: boolean; action?: string }[]
+  >([]);
   // console.log('status', status);
 
-  const updateStatus = (action: string, newStatus: { error: boolean; loading: boolean }) => {
+  const updateStatus = (
+    action: string,
+    newStatus: { error: boolean; loading: boolean },
+  ) => {
     setStatus(prevStatus => {
       const updatedStatus = prevStatus.filter(s => s.action !== action);
       return [...updatedStatus, { ...newStatus, action }];
     });
   };
   // console.log(status);
+
+  const handleClick = async () => {
+    updateStatus('click', { error: false, loading: true });
+    try {
+      await onClick?.(id);
+      updateStatus('click', { error: false, loading: false });
+    } catch {
+      updateStatus('click', { error: true, loading: false });
+    }
+  };
 
   const handleSave = async () => {
     updateStatus('save', { error: false, loading: true });
@@ -79,7 +109,10 @@ export default function ListItem({
       updateStatus('delete', { error: true, loading: false });
     }
   };
-  const handleLabelToggle = async (labelId: string, toggleClickFn: () => Promise<void> | void) => {
+  const handleLabelToggle = async (
+    labelId: string,
+    toggleClickFn: () => Promise<void> | void,
+  ) => {
     // console.log('toggle label', labelId);
     updateStatus(`labelToggle-${labelId}`, { error: false, loading: true });
     try {
@@ -91,14 +124,18 @@ export default function ListItem({
     }
   };
 
-  const getStatus = (action: string) => status.find(s => s.action === action) || { error: false, loading: false };
+  const getStatus = (action: string) =>
+    status.find(s => s.action === action) || { error: false, loading: false };
   return (
-    <TouchableOpacity style={styles.container} onPress={() => onClick?.(id)}>
+    <TouchableOpacity style={styles.container} onPress={handleClick}>
       <View style={styles.horizontalItem}>
         {imageUrl && <Image source={{ uri: imageUrl }} style={styles.horizontalImage} />}
         <View style={styles.trackContainer}>
           <View style={styles.trackInfo}>
-            <Text style={[styles.trackTitle, !isDownloaded && { opacity: 0.35 }]} numberOfLines={1}>
+            <Text
+              style={[styles.trackTitle, !isDownloaded && { opacity: 0.35 }]}
+              numberOfLines={1}
+            >
               {title}
             </Text>
             <Text style={[styles.trackArtist, { marginBottom: 2 }]} numberOfLines={1}>
@@ -127,7 +164,8 @@ export default function ListItem({
                       <Text
                         style={[
                           styles.label,
-                          (isActive || getStatus(`label_${text}_${index}`).loading) && styles.activeLabel,
+                          (isActive || getStatus(`label_${text}_${index}`).loading) &&
+                            styles.activeLabel,
                           loadingDownload && { opacity: 0.35 },
                           // (isActive || getStatus(`labelToggle-${id}`).loading === true) && styles.activeLabel,
                         ]}
@@ -140,23 +178,28 @@ export default function ListItem({
               </Text>
             )}
           </View>
-
           {onSave && typeof onSave !== 'undefined' && (
             <View style={styles.trackActions}>
-              <TouchableOpacity onPress={handleSave} style={styles.saveButton} disabled={getStatus('save').loading}>
+              <TouchableOpacity
+                onPress={handleSave}
+                style={styles.saveButton}
+                disabled={getStatus('save').loading}
+              >
                 {getStatus('save').loading ? (
                   <ActivityIndicator color="rgba(255, 255, 255, 0.3)" />
                 ) : (
                   <Ionicons
                     name={isSaved ? 'heart' : 'heart-outline'}
                     size={20}
-                    color={isSaved ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)'}
+                    color={
+                      isSaved ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)'
+                    }
                   />
                 )}
               </TouchableOpacity>
             </View>
           )}
-          {!isDownloaded && onDownload && typeof onDownload !== 'undefined' && (
+          {onDownload && typeof onDownload !== 'undefined' && (
             <View style={styles.trackActions}>
               <TouchableOpacity
                 onPress={handleDownload}
@@ -169,7 +212,9 @@ export default function ListItem({
                   <Ionicons
                     name="download-outline"
                     size={20}
-                    color={isSaved ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)'}
+                    color={
+                      isSaved ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)'
+                    }
                   />
                 )}
               </TouchableOpacity>
@@ -177,14 +222,20 @@ export default function ListItem({
           )}
           {!loadingDownload && onDelete && typeof onDelete !== 'undefined' && (
             <View style={styles.trackActions}>
-              <TouchableOpacity onPress={handleDelete} style={styles.saveButton} disabled={getStatus('delete').loading}>
+              <TouchableOpacity
+                onPress={handleDelete}
+                style={styles.saveButton}
+                disabled={getStatus('delete').loading}
+              >
                 {getStatus('delete').loading ? (
                   <ActivityIndicator color="rgba(255, 255, 255, 0.3)" />
                 ) : (
                   <Ionicons
                     name={'trash-outline'}
                     size={20}
-                    color={isSaved ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)'}
+                    color={
+                      isSaved ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)'
+                    }
                   />
                 )}
               </TouchableOpacity>
@@ -192,24 +243,18 @@ export default function ListItem({
           )}
           {loadingDownload && (
             <View style={styles.trackActions}>
-              <TouchableOpacity onPress={handleDownload} style={styles.saveButton} disabled={true}>
+              <TouchableOpacity
+                onPress={handleDownload}
+                style={styles.saveButton}
+                disabled={true}
+              >
                 <ActivityIndicator color="rgba(255, 255, 255, 0.3)" />
               </TouchableOpacity>
             </View>
           )}
-          {/* <View style={styles.trackActions}>
-            <TouchableOpacity style={styles.saveButton} disabled={true}>
-              {loadingDownload ? (
-                <ActivityIndicator color="rgba(255, 255, 255, 0.3)" />
-              ) : (
-                <Ionicons
-                  name={'checkmark-circle-outline'}
-                  size={20}
-                  color={isDownloaded ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.3)'}
-                />
-              )}
-            </TouchableOpacity>
-          </View> */}
+          {getStatus('click').loading ? (
+            <ActivityIndicator color="rgba(255, 255, 255, 0.3)" />
+          ) : null}
         </View>
       </View>
     </TouchableOpacity>
@@ -225,12 +270,12 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   labelContainer: {
+    overflow: 'scroll',
     marginTop: 3,
     display: 'flex',
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 5,
-    maxWidth: '100%',
   },
   label: {
     borderRadius: 6,
@@ -319,6 +364,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     fontSize: 14,
     marginTop: 4,
+    width: '100%',
   },
   trackActions: {
     flexDirection: 'row',

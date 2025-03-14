@@ -11,10 +11,17 @@ import { Ionicons } from '@expo/vector-icons';
 export default function Collection() {
   const { id } = useLocalSearchParams();
   const [addModalIsVisible, setAddModalIsVisible] = React.useState(false);
-  const [moreModalIsVisible, setMoreModalIsVisible] = React.useState(false);
-  const { collection, tracks, image, deviceAlbums, loading, error, fetchData } = useFetchCollectionTracks();
-  const { onDelete, onDownload, onTrackClick, onCreateCollection, onToggleCategory, onMoveFiles } =
-    useCollectionActions();
+  // const [moreModalIsVisible, setMoreModalIsVisible] = React.useState(false);
+  const { collection, tracks, image, deviceAlbums, loading, error, fetchData } =
+    useFetchCollectionTracks();
+  const {
+    onDelete,
+    onDownload,
+    onTrackClick,
+    onCreateCollection,
+    onToggleCategory,
+    onMoveFiles,
+  } = useCollectionActions();
 
   function handleMoveFiles() {
     onMoveFiles(Object.values(tracks.byId));
@@ -24,6 +31,7 @@ export default function Collection() {
     return onDownload(track);
   }
   const allDeviceTracks = deviceAlbums.byId['All'];
+  // console.log(allDeviceTracks);
   // console.log(allDeviceTracks.allIds);
   // console.log(allDeviceTracks.missingIds);
   if (!collection.loaded || !tracks.loaded) return null;
@@ -32,12 +40,16 @@ export default function Collection() {
     .filter(collectionId => collectionId !== 'All' && collectionId !== 'Uncategorized')
     .reduce(
       (acc, collectionId) => {
-        acc[collectionId] = Object.values(tracks.byId).filter(track => track.collectionIds.includes(collectionId));
+        acc[collectionId] = Object.values(tracks.byId).filter(track =>
+          track.collectionIds.includes(collectionId),
+        );
         return acc;
       },
       {
         All: Object.values(tracks.byId),
-        Uncategorized: Object.values(tracks.byId).filter(track => track.collectionIds.length === 0),
+        Uncategorized: Object.values(tracks.byId).filter(
+          track => track.collectionIds.length === 0,
+        ),
       },
     );
   const collectionIds = Object.keys(tracksByCollection).sort((a, b) => {
@@ -49,9 +61,9 @@ export default function Collection() {
   });
   const tabs = collectionIds.map(collectionId => ({
     title: collectionId,
-    // onDownload: handleDownloadTrack,
+    onDownload: handleDownloadTrack,
     onDelete,
-    onClick: (itemId: string) => onTrackClick(tracks.byId[itemId]),
+    onClick: (itemId: string) => onTrackClick(tracks.byId[itemId], collectionId),
     emptyComponent: (
       <View style={styles.container}>
         <View style={styles.iconContainer}>
@@ -66,19 +78,29 @@ export default function Collection() {
     items: tracksByCollection[collectionId].map(track => ({
       id: track.id,
       isDownloaded: track.storage?.storageId,
-      downloadDisabled: !track.storage?.storageId,
+      downloadDisabled:
+        !allDeviceTracks.missingIds.includes(track.id) || !track.storage?.storageId,
       loadingDownload: track.downloading,
       title: track.spotify.name,
       categories: track.collectionIds,
       mergedCategories: track.collectionIds.join(', '),
-      mergedArtists: track.spotify.artists.map(artist => artist.name).join(', '),
+      mergedArtists: track.spotify.artists
+        .slice(0, 2)
+        .map(artist => artist.name)
+        .join(', '),
       descriptions: [
         {
-          text: track.spotify.artists.map(artist => artist.name).join(', '),
+          text: track.spotify.artists
+            .slice(0, 2)
+            .map(artist => artist.name)
+            .join(', '),
         },
       ],
       labels: collection.ids
-        .filter((collectionId: string) => collectionId !== 'Uncategorized' && collectionId !== 'All')
+        .filter(
+          (collectionId: string) =>
+            collectionId !== 'Uncategorized' && collectionId !== 'All',
+        )
         .map((collectionId: string) => ({
           text: collectionId,
           isActive: track.collectionIds.includes(collectionId),
@@ -96,8 +118,12 @@ export default function Collection() {
         buttonTabStyle
         backgroundImage={image.loaded && tracks.ids.length > 0 ? image.url : undefined}
         onAdd={() => setAddModalIsVisible(true)}
-        onMore={() => setMoreModalIsVisible(true)}
-        defaultTab={tabs.findIndex(tab => tab.title === id) !== -1 ? tabs.findIndex(tab => tab.title === id) : 0}
+        // onMore={() => setMoreModalIsVisible(true)}
+        defaultTab={
+          tabs.findIndex(tab => tab.title === id) !== -1
+            ? tabs.findIndex(tab => tab.title === id)
+            : 0
+        }
         onRefresh={fetchData}
         tabs={tabs}
       />
@@ -106,11 +132,11 @@ export default function Collection() {
         isVisible={addModalIsVisible}
         onClose={() => setAddModalIsVisible(false)}
       />
-      <MoreModal
+      {/* <MoreModal
         isVisible={moreModalIsVisible}
         onClose={() => setMoreModalIsVisible(false)}
         onMoveFiles={handleMoveFiles}
-      />
+      /> */}
     </>
   );
 }

@@ -1,21 +1,21 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { useSelector } from 'react-redux';
-import { useFetchDownloadPage } from './useFetchDownloadPage';
 import List from '@/components/list';
+import useApi from '@/hooks/useBanana';
 import { Ionicons } from '@expo/vector-icons';
-import { DataStateType } from '@/utils/redux/dataReducer';
+import { StyleSheet, Text, View } from 'react-native';
+import { useFetchGoogleDriveTracks } from './useFetchGoogleDriveTracks';
 
-export default function Download() {
-  const { loading, error, image, tracks, fetchData } = useFetchDownloadPage();
+export default function GoogleDriveTracks() {
+  const { googleDriveTracks, fetchData } = useFetchGoogleDriveTracks();
+  const { onDeleteGoogleDriveTrack } = useApi();
 
   return (
     <List
-      title={'Tracks'}
+      title={'Google Drive'}
       search
       searchKeys={['title', 'mergedCategories', 'mergedArtists']}
       buttonTabStyle
-      backgroundImage={image.loaded && tracks.ids.length > 0 ? image.url : undefined}
       onRefresh={fetchData}
+      loaded={googleDriveTracks.loaded}
       tabs={[
         {
           emptyComponent: (
@@ -24,35 +24,33 @@ export default function Download() {
                 <Ionicons name="library-outline" size={32} color={'#ffffff80'} />
               </View>
               <View style={styles.textContainer}>
-                <Text style={styles.title}>No tracks found</Text>
+                <Text style={styles.title}>No tracks found in google drive</Text>
                 <Text style={styles.description}>
                   Start adding tracks to this collection
                 </Text>
               </View>
             </View>
           ),
-          onDownload: () => {},
-          items: tracks.ids.map((trackId: string) => {
-            const track = tracks.byId[trackId];
+          onDelete: onDeleteGoogleDriveTrack,
+          items: googleDriveTracks.ids.map((trackId: string) => {
+            const track = googleDriveTracks.byId[trackId];
             return {
               id: track.id,
-              //   isSaved: true,
-              //   isDownloaded: false,
-              isDownloaded: false,
-              // isDownloaded: track.storage?.storageId,
-              title: track.spotify.name,
-              categories: track.collectionIds,
-              mergedCategories: track.collectionIds.join(', '),
-              mergedArtists: track.spotify.artists
-                .slice(0, 2)
-                .map(artist => artist.name)
-                .join(', '),
+              isDownloaded: true,
+              title: track.name,
               descriptions: [
                 {
-                  text: track.spotify.artists
-                    .slice(0, 2)
-                    .map(artist => artist.name)
-                    .join(', '),
+                  text: `${(track.size / (1024 * 1024)).toFixed(2)} MB`, // Convert size to MB with 2 decimal places
+                },
+                {
+                  text: new Date(track.createdTime).toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false, // Use 24-hour format, set to true for AM/PM
+                  }),
                 },
               ],
             };

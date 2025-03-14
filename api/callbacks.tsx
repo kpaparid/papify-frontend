@@ -13,26 +13,28 @@ import * as MediaLibrary from 'expo-media-library';
 
 import { DeviceAlbumType } from '@/types/device-album-type';
 import { Alert } from 'react-native';
+import { GoogleDriveTrack } from '@/types/google-drive-track-type';
 const BACKEND_API = 'https://papify-backend.onrender.com/api';
 // const BACKEND_API = 'http://localhost:5000/api';
 
-const getRequest = (url: string) => fetch(BACKEND_API + url).then(response => response.json());
+const getRequest = (url: string) =>
+  fetch(BACKEND_API + url).then(response => response.json());
 const postRequest = (url: string, data?: any) => {
   return fetch(BACKEND_API + url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   }).then(response => {
-    console.log(response);
     return response.json();
   });
 };
-const deleteRequest = (url: string) => fetch(BACKEND_API + url, { method: 'DELETE' }).then(response => response.json());
-const putRequest = (url: string, data: any) =>
+const deleteRequest = (url: string) =>
+  fetch(BACKEND_API + url, { method: 'DELETE' }).then(response => response.json());
+const putRequest = (url: string, data?: any) =>
   fetch(BACKEND_API + url, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: data && JSON.stringify(data),
   }).then(response => response.json());
 
 export function searchSpotify({
@@ -76,6 +78,12 @@ export function getCollections(): Promise<CollectionType[]> {
 export function postCollection(collectionId: string): Promise<CollectionType[]> {
   return postRequest(`/collections/${collectionId}`);
 }
+export function putCollection(
+  collectionId: string,
+  newCollectionId: string,
+): Promise<CollectionType[]> {
+  return putRequest(`/collections/${collectionId}`, { name: newCollectionId });
+}
 export function deleteCollection(collectionId: string): Promise<CollectionType[]> {
   return deleteRequest(`/collections/${collectionId}`);
 }
@@ -85,12 +93,22 @@ export function getTracks() {
 export function removeTrack(trackId: string) {
   return deleteRequest(`/tracks/${trackId}`);
 }
-export function getYtTrack(spotifyId: string, title: string, artists?: string[]): Promise<YtTrackType[]> {
-  const artistsString = artists ? `&artists=${artists}` : '';
+export function getYtTrack(
+  spotifyId: string,
+  title: string,
+  artists?: string[],
+): Promise<YtTrackType> {
+  const artistsString = artists ? `&artists=${artists.join(', ')}` : '';
   return getRequest(`/youtube/tracks?id=${spotifyId}&title=${title}${artistsString}`);
 }
 export function getCollectionTracks(): Promise<CollectionTracksType> {
   return getRequest('/collections/tracks');
+}
+export function getGoogleDriveTracks(): Promise<GoogleDriveTrack[]> {
+  return getRequest('/google-drive/tracks');
+}
+export function removeGoogleDriveTrack(id: string) {
+  return deleteRequest('/google-drive/tracks/' + id);
 }
 export function deleteTrack(spotifyId: string): Promise<string> {
   return deleteRequest(`/collections/tracks/${spotifyId}`);
@@ -98,13 +116,16 @@ export function deleteTrack(spotifyId: string): Promise<string> {
 export function saveTrack(spotifyId: string): Promise<SavedTrackType> {
   return postRequest(`/tracks/${spotifyId}/save`);
 }
-export function toggleTrackCollection(spotifyId: string, collectionId: string, value: boolean) {
+export function toggleTrackCollection(
+  spotifyId: string,
+  collectionId: string,
+  value: boolean,
+) {
   return putRequest(`/collections/${collectionId}/tracks/${spotifyId}`, {
     value,
   });
 }
 export async function downloadTrack(id: string, filename: string) {
-  console.log('Downloading file:', filename);
   const fileUri = `${BACKEND_API}/tracks/${id}/download`;
   const fileUriLocal = FileSystem.documentDirectory + filename;
   const fileInfo = await FileSystem.getInfoAsync(fileUriLocal);
@@ -114,10 +135,16 @@ export async function downloadTrack(id: string, filename: string) {
     console.log('File already exists, skipping download:', filename);
   }
   const callback = (downloadProgress: FileSystem.DownloadProgressData) => {
-    const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
+    const progress =
+      downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
     console.log(progress);
   };
-  const downloadResumable = FileSystem.createDownloadResumable(fileUri, fileUriLocal, {}, callback);
+  const downloadResumable = FileSystem.createDownloadResumable(
+    fileUri,
+    fileUriLocal,
+    {},
+    callback,
+  );
   return downloadResumable.downloadAsync().then(() => moveMp3(filename));
 }
 
@@ -176,7 +203,7 @@ const moveMp3 = async (fileName: string) => {
     // Alert.alert('Success', 'File deleted from internal storage!');
   } catch (error) {
     console.error(error);
-    Alert.alert('Error', 'Failed to move the file.');
+    Alert.alert('Error', 'Failed to move the file.' + fileName);
   }
 };
 export async function getDeviceTracks(): Promise<string[]> {
@@ -210,7 +237,10 @@ export async function getDeviceTracks(): Promise<string[]> {
   return assetsWithNames;
 }
 
-export async function createDeviceAlbums(deviceAlbums: { byId: { [id: string]: DeviceAlbumType }; ids: string[] }) {
+export async function createDeviceAlbums(deviceAlbums: {
+  byId: { [id: string]: DeviceAlbumType };
+  ids: string[];
+}) {
   console.log('Starting to move files...', deviceAlbums);
 
   // 1. Request Permissions
@@ -227,8 +257,6 @@ export async function createDeviceAlbums(deviceAlbums: { byId: { [id: string]: D
       album: papifyAlbum,
       mediaType: MediaLibrary.MediaType.audio,
     });
-    console.log({ papifyAlbum });
-    console.log({ deviceAlbums });
 
     if (!papifyAlbum || deviceAlbums.byId['All'].missingIds.length > 0) {
       console.log('Creating Papify album...');
@@ -295,7 +323,9 @@ export async function createDeviceAlbums(deviceAlbums: { byId: { [id: string]: D
           });
 
           // 5.4 Check if the asset already exists in the collection
-          const assetExists = collectionMedia.assets.some(({ filename }) => filename === asset.filename);
+          const assetExists = collectionMedia.assets.some(
+            ({ filename }) => filename === asset.filename,
+          );
 
           if (assetExists) {
             console.log(`Asset already exists in album ${albumName}: ${asset.filename}`);
@@ -311,7 +341,10 @@ export async function createDeviceAlbums(deviceAlbums: { byId: { [id: string]: D
           );
           console.log(`Successfully added to album: ${albumName}`);
         } catch (error) {
-          console.error(`Error processing collection ${collectionId} for ${asset.filename}:`, error);
+          console.error(
+            `Error processing collection ${collectionId} for ${asset.filename}:`,
+            error,
+          );
         }
       }
     }
@@ -357,7 +390,6 @@ export async function moveFiles2() {
         mediaType: MediaLibrary.MediaType.audio,
         first: 100000, // Fetch all assets from the album
       });
-      // console.log(albumAssets);
       if (albumAssets.assets.length > 0) {
         // Create a new album with the title 'Copy_' + album.title, using the first asset to create the album
         const newAlbumTitle = `Copy_${album.title}`;
@@ -370,7 +402,9 @@ export async function moveFiles2() {
         // Add the assets to the new album
         if (assetIds.length > 0) {
           await MediaLibrary.addAssetsToAlbumAsync(assetIds, newAlbum.id);
-          console.log(`Created copy of album: ${newAlbumTitle} with ${assetIds.length} assets.`);
+          console.log(
+            `Created copy of album: ${newAlbumTitle} with ${assetIds.length} assets.`,
+          );
         }
       } else {
         console.log(`No assets found in album ${album.title}. Skipping album creation.`);
@@ -384,8 +418,9 @@ export async function moveFiles2() {
     console.log(error);
   }
 }
-export async function checkDeviceTracks(collections: CollectionType[]): Promise<DeviceAlbumType[]> {
-  console.log({ collections });
+export async function checkDeviceTracks(
+  collections: CollectionType[],
+): Promise<DeviceAlbumType[]> {
   // Request permission to access media library
   const { status } = await MediaLibrary.requestPermissionsAsync();
   if (status !== 'granted') {
@@ -398,7 +433,8 @@ export async function checkDeviceTracks(collections: CollectionType[]): Promise<
   const allAlbums = await MediaLibrary.getAlbumsAsync();
   const albumsToDelete = allAlbums.filter(
     album =>
-      album.title.startsWith('Papify ') && !collections.map(({ name }) => `Papify ${name}`).includes(album.title),
+      album.title.startsWith('Papify ') &&
+      !collections.map(({ name }) => `Papify ${name}`).includes(album.title),
   );
 
   // Step 3: Extract IDs of albums to delete
@@ -409,7 +445,6 @@ export async function checkDeviceTracks(collections: CollectionType[]): Promise<
     await MediaLibrary.deleteAlbumsAsync(albumIdsToDelete);
     console.log(`Deleted albums: ${albumIdsToDelete}`);
   }
-  console.log({ allAlbums });
   // const album = await MediaLibrary.getAlbumAsync(`Papify Uncategorized`);
   // console.log({ album });
   // const media = await MediaLibrary.getAssetsAsync({
@@ -419,7 +454,6 @@ export async function checkDeviceTracks(collections: CollectionType[]): Promise<
   // console.log({ media });
   for (const collection of collections) {
     console.log('Checking album Papify', collection.name);
-    console.log(collection);
     const papifyAlbum = await MediaLibrary.getAlbumAsync(`Papify ${collection.name}`);
     if (!papifyAlbum) {
       console.log(`Papify ${collection.name} not found`);
@@ -442,10 +476,12 @@ export async function checkDeviceTracks(collections: CollectionType[]): Promise<
       });
       const unknownAssets = unknownMedia.assets.filter(
         asset =>
-          !(asset.mediaType === 'audio' && collection.tracks.some(track => track?.storage.name === asset.filename)),
+          !(
+            asset.mediaType === 'audio' &&
+            collection.tracks.some(track => track?.storage.name === asset.filename)
+          ),
       );
       if (unknownAssets.length > 0) {
-        console.log({ unknownAssets });
         const idsToDelete = unknownMedia.assets.map(asset => asset.id);
         await MediaLibrary.deleteAssetsAsync(idsToDelete);
         console.log(`Deleted ${idsToDelete.length} non-audio assets.`);
@@ -458,10 +494,8 @@ export async function checkDeviceTracks(collections: CollectionType[]): Promise<
         mediaType: MediaLibrary.MediaType.audio,
         first: 100000,
       });
-      console.log(media);
 
       const existingTracks = new Set([...media.assets.map(({ filename }) => filename)]);
-      console.log({ existingTracks });
       const missingIds = [];
 
       for (const track of collection.tracks) {
@@ -488,10 +522,8 @@ export async function checkDeviceTracks(collections: CollectionType[]): Promise<
 
     // Fetch media from the "Papify All" album
   }
-  console.log(collections);
 
   // Output results
-  console.log(collectionsSummary);
   console.log('Ending checkDeviceTracks');
 
   return collectionsSummary;
@@ -529,6 +561,5 @@ export async function removeDeviceTrack(track: SavedTrackType, collectionIds: st
   }
 }
 export async function postCookies(cookie: string) {
-  console.log({ cookie });
   return postRequest('/yt-cookie', { cookie });
 }

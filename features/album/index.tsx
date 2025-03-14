@@ -11,7 +11,7 @@ export default function Album() {
   const { albumData, savedTracks } = useFetchAlbum(id as string);
 
   function handleSave(itemId: string) {
-    onToggleSaveTrack(itemId, !savedTracks.includes(itemId));
+    return onToggleSaveTrack(itemId, !savedTracks.includes(itemId));
   }
 
   if (!albumData) return null;
@@ -19,11 +19,11 @@ export default function Album() {
   return (
     <List
       title={albumData.name}
-      subtitle={albumData.artists.map(artist => artist.name).join(', ')}
-      description={[
-        `${albumData.tracks.length} tracks`,
-        albumData.release_date,
-      ]}
+      subtitle={albumData.artists
+        .slice(0, 2)
+        .map(artist => artist.name)
+        .join(', ')}
+      description={[`${albumData.tracks.length} tracks`, albumData.release_date]}
       image={albumData.images[0]}
       tabs={[
         {
@@ -31,10 +31,13 @@ export default function Album() {
           onClick: (itemId: string) => {
             const track = albumData.tracks.find(({ id }) => id === itemId);
             if (!track) return;
-            onTrackClick(
+            return onTrackClick(
               itemId,
               track.name,
-              track.artists.map(artist => artist.name),
+              track.artists.slice(0, 2).map(artist => artist.name),
+              albumData.images[0],
+              'album',
+              id as string,
             );
           },
           onSave: handleSave,
@@ -42,8 +45,14 @@ export default function Album() {
             id,
             title: name,
             isSaved: savedTracks.includes(id),
+            isDownloaded: true,
             descriptions: [
-              { text: artists.map(artist => artist.name).join(', ') },
+              {
+                text: artists
+                  .slice(0, 2)
+                  .map(artist => artist.name)
+                  .join(', '),
+              },
             ],
           })),
         },

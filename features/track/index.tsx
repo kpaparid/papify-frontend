@@ -20,27 +20,46 @@ import { getYtTrack } from '@/api/callbacks';
 import { useLoadData } from '@/hooks/useLoadData';
 
 import YoutubePlayer from 'react-native-youtube-iframe';
+// import YtTrack from './yt-track';
+import DeviceTrack from './device-track';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function Track() {
   const router = useRouter();
   const [play, setPlay] = useState(false);
-  const { id, title, artists } = useLocalSearchParams();
+  const {
+    id,
+    title,
+    artists,
+    ytTrack,
+    file,
+    imageUrl,
+    description,
+    publish_date,
+  }: {
+    id: string;
+    title: string;
+    artists: string;
+    ytTrack: string;
+    file: string;
+    imageUrl: string;
+    description: string;
+    publish_date: string;
+  } = useLocalSearchParams();
 
   const dispatch = useDispatch();
   const ytTrackData = useSelector((state: { data: DataStateType }) => {
-    console.log({ state });
     return state.data.ytTracks.byId[id as string];
   });
 
   const handleFetch = useCallback(() => {
     if (!id) return;
     if (ytTrackData) return;
-    return getYtTrack(id as string, title as string, artists as string[]).then(
-      artist => dispatch(addYtTrack(artist)),
+    return getYtTrack(id as string, title as string, artists as string).then(artist =>
+      dispatch(addYtTrack(artist)),
     );
-  }, [id]);
+  }, [id, ytTrack]);
 
   const { loading, error } = useLoadData(handleFetch);
   if (!ytTrackData) return null;
@@ -52,55 +71,28 @@ export default function Track() {
       blurRadius={150}
     >
       <BlurView intensity={90} style={StyleSheet.absoluteFill} tint="dark" />
-
-      <SafeAreaView style={styles.content}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Feather name="chevron-down" size={32} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <Feather name="more-horizontal" size={24} color="#fff" />
-          </TouchableOpacity>
-        </View>
-
-        {/* {!play && (
-            <Image
-              source={ytTrackData.images[0]}
-              style={styles.albumArt}
-              resizeMode="cover"
-            />
-          )} */}
-        <View style={styles.albumContainer}>
-          <View style={styles.container}>
-            <YoutubePlayer
-              height={250} // Use a small height
-              play={play}
-              videoId={ytTrackData.youtubeId}
-              onChangeState={state => console.log(state)}
-            />
-          </View>
-        </View>
-
-        <View style={styles.songInfo}>
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>{ytTrackData.title}</Text>
-          </View>
-          <Text style={styles.artist}>{artists}</Text>
-          <View style={styles.collectionsContainer}>
-            {/* {songData.collections.map((collection, index) => (
-              <Text key={index} style={styles.collectionText}>
-                {index > 0 ? ' • ' : ''}
-                {collection}
-              </Text>
-            ))} */}
-          </View>
-        </View>
-        <TouchableOpacity onPress={() => setPlay(!play)}>
-          <Feather name={play ? 'pause' : 'play'} size={32} color="#fff" />
-        </TouchableOpacity>
-        <MediaControls duration={15} />
-        {/* <MediaControls duration={songData.duration} /> */}
-      </SafeAreaView>
+      {file ? (
+        <></>
+      ) : (
+        // <DeviceTrack
+        //   id={id}
+        //   title={title}
+        //   artists={artists}
+        //   file={file}
+        //   imageUrl={imageUrl}
+        // />
+        <>
+          {/* <YtTrack
+          id={id}
+          title={title}
+          artists={artists}
+          ytId={ytTrack}
+          description={description}
+          publish_date={publish_date}
+          imageUrl={imageUrl}
+        /> */}
+        </>
+      )}
     </ImageBackground>
   );
 }

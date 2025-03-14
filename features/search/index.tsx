@@ -4,9 +4,17 @@ import { useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import useFetchSearch from './hooks/useFetchSearch';
 export default function Search() {
-  const { onAlbumClick, onPlaylistClick, onTrackClick, onArtistClick, onToggleSaveTrack } = useApi();
+  const {
+    onAlbumClick,
+    onPlaylistClick,
+    onTrackClick,
+    onArtistClick,
+    onToggleSaveTrack,
+  } = useApi();
   const { query } = useLocalSearchParams();
-  const { searchResult, loading, error, savedTracks, imageUrl } = useFetchSearch(query as string);
+  const { searchResult, loading, error, savedTracks, imageUrl } = useFetchSearch(
+    query as string,
+  );
   if (loading || !searchResult || error || !savedTracks) return null;
   const { topResult, tracks, artists, albums, playlists } = searchResult;
 
@@ -19,7 +27,15 @@ export default function Search() {
       title: name,
       isSaved: savedTracks.includes(id),
       imageUrl: album.images[0],
-      descriptions: [{ text: artists.map(artist => artist.name).join(', ') }],
+      isDownloaded: true,
+      descriptions: [
+        {
+          text: artists
+            .slice(0, 2)
+            .map(artist => artist.name)
+            .join(', '),
+        },
+      ],
     }));
 
   const createArtistItems = () =>
@@ -27,7 +43,8 @@ export default function Search() {
       id,
       title: name,
       imageUrl: images[0],
-      descriptions: [{ text: `${followers} followers` }],
+      isDownloaded: true,
+      descriptions: [{ text: `${followers.toLocaleString()} followers` }],
       // descriptions: [{ icon: 'people', text: `${followers} followers` }],
     }));
 
@@ -36,6 +53,7 @@ export default function Search() {
       id,
       title: name,
       imageUrl: images[0],
+      isDownloaded: true,
       descriptions: [
         { text: `${release_date.split('-')[0]} - ${total_tracks} tracks` },
         // { text: `${total_tracks} tracks` },
@@ -49,6 +67,7 @@ export default function Search() {
       id,
       title: name,
       imageUrl: images[0],
+      isDownloaded: true,
       descriptions: [{ text: `${total_tracks} tracks` }],
       // descriptions: [{ icon: 'musical-notes', text: `${total_tracks} tracks` }],
     }));
@@ -56,17 +75,39 @@ export default function Search() {
   return (
     <List
       title={topResult.name}
+      onImageClick={() => {
+        return topResult.type === 'track'
+          ? onTrackClick(
+              topResult.id,
+              topResult.name,
+              topResult.artists.slice(0, 2).map(artist => artist.name),
+              imageUrl,
+              'search',
+              query as string,
+            )
+          : topResult.type === 'artist'
+            ? onArtistClick(topResult.id)
+            : topResult.type === 'album'
+              ? onAlbumClick(topResult.id)
+              : topResult.type === 'playlist'
+                ? onPlaylistClick(topResult.id)
+                : undefined;
+      }}
       image={imageUrl}
       tabs={[
         {
           title: 'Tracks',
+
           onClick: (itemId: string) => {
             const track = tracks.find(({ id }) => id === itemId);
             if (!track) return;
             onTrackClick(
               itemId,
               track.name,
-              track.artists.map(artist => artist.name),
+              track.artists.slice(0, 2).map(artist => artist.name),
+              track.album.images[0],
+              'search',
+              query as string,
             );
           },
           onSave: handleSave,

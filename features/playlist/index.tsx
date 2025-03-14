@@ -34,15 +34,24 @@ export default function Playlist() {
             onTrackClick(
               itemId,
               track.name,
-              track.artists.map(artist => artist.name),
+              track.artists.slice(0, 2).map(artist => artist.name),
+              track.album[0].images[0],
+              'playlist',
+              id as string,
             );
           },
           items: playlistData.tracks.map(({ id, name, artists }) => ({
             id,
             title: name,
             isSaved: savedTracks.includes(id),
+            isDownloaded: true,
             descriptions: [
-              { text: artists.map(artist => artist.name).join(', ') },
+              {
+                text: artists
+                  .slice(0, 2)
+                  .map(artist => artist.name)
+                  .join(', '),
+              },
             ],
           })),
         },

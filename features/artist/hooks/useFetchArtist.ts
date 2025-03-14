@@ -6,7 +6,7 @@ import { ArtistProfileType } from '@/types/artist-type';
 
 export const useFetchArtist = (id: string) => {
   const dispatch = useDispatch();
-  const [artistData, savedTracks, tracksLoaded]: [
+  const [artistData, savedTracks, tracksLoaded, data]: [
     ArtistProfileType,
     string[],
     boolean,
@@ -14,6 +14,7 @@ export const useFetchArtist = (id: string) => {
     state.data.artists.byId[id as string],
     state.data.tracks.ids,
     state.data.tracks.loaded,
+    state.data
   ]);
 
   const handleFetch = useCallback(() => {

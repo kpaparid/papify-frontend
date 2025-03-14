@@ -2,51 +2,54 @@ import { postCookies } from '@/api/callbacks';
 import React, { useState } from 'react';
 import { View, Text, Button, StyleSheet, ScrollView } from 'react-native';
 import { WebView } from 'react-native-webview';
-import CookieManager, { Cookie } from '@react-native-cookies/cookies';
+// import CookieManager, { Cookie } from '@react-native-cookies/cookies';
 
 // Function to get all cookies for the current WebView session
 
 const YouTubeLogin = () => {
-  const [cookies, setCookies] = useState(null); // Store cookies manually if required
-  const [uri, setUri] = useState('https://accounts.google.com/ServiceLogin?service=youtube'); // WebView URI
+  const [cookies, setCookies] = useState<string>(''); // Store cookies manually if required
+  const [uri, setUri] = useState(
+    'https://accounts.google.com/ServiceLogin?service=youtube',
+  ); // WebView URI
   const [isWebViewOpen, setIsWebViewOpen] = useState(false); // Track WebView visibility
   const [key, setKey] = useState(0); // Key to force WebView reload
   const fetchCookies = async () => {
-    const cookies = await CookieManager.get('https://www.youtube.com/');
-    // console.log('Fetched cookies:', cookies);
-    const formatedCookies = formatCookiesToNetscape(cookies);
-    console.log(formatedCookies);
-    return cookies;
+    // const cookies = await CookieManager.get('https://www.youtube.com/');
+    // // console.log('Fetched cookies:', cookies);
+    // const formatedCookies = formatCookiesToNetscape(cookies);
+    // console.log(formatedCookies);
+    // return cookies;
   };
   // Function to handle saving cookies from WebView
-  const handleSaveCookies = cookieString => {
+  const handleSaveCookies = (cookieString: string) => {
     setCookies(cookieString); // Save cookies to state
   };
-  const formatCookiesToNetscape = cookies => {
-    let netscapeFormatCookies = '# Netscape HTTP Cookie File\n# This is a generated file! Do not edit.\n\n';
+  // const formatCookiesToNetscape = cookies => {
+  //   let netscapeFormatCookies =
+  //     '# Netscape HTTP Cookie File\n# This is a generated file! Do not edit.\n\n';
 
-    // Iterate over each cookie and format it as Netscape format
-    for (const cookieName in cookies) {
-      if (cookies.hasOwnProperty(cookieName)) {
-        const cookie = cookies[cookieName] as Cookie;
-        console.log(cookie);
+  //   // Iterate over each cookie and format it as Netscape format
+  //   for (const cookieName in cookies) {
+  //     if (cookies.hasOwnProperty(cookieName)) {
+  //       const cookie = cookies[cookieName] as Cookie;
+  //       console.log(cookie);
 
-        // Example format: domain, path, secure, expiry, name, value
-        const domain = cookie.domain || '.youtube.com'; // Default to google.com if not provided
-        const path = cookie.path || '/'; // Default to '/' path
-        const secure = cookie.secure ? 'TRUE' : 'FALSE';
-        const httpOnly = cookie.httpOnly ? 'TRUE' : 'FALSE';
-        const expires = cookie.expires || new Date('2030-01-19').getTime(); // Default to 0 if no expiry is set
-        const name = cookie.name;
-        const value = cookie.value;
+  //       // Example format: domain, path, secure, expiry, name, value
+  //       const domain = cookie.domain || '.youtube.com'; // Default to google.com if not provided
+  //       const path = cookie.path || '/'; // Default to '/' path
+  //       const secure = cookie.secure ? 'TRUE' : 'FALSE';
+  //       const httpOnly = cookie.httpOnly ? 'TRUE' : 'FALSE';
+  //       const expires = cookie.expires || new Date('2030-01-19').getTime(); // Default to 0 if no expiry is set
+  //       const name = cookie.name;
+  //       const value = cookie.value;
 
-        // Format as Netscape cookie line
-        netscapeFormatCookies += `${domain}    TRUE    ${path}    ${secure}    ${expires}    ${name}    ${value}\n`;
-      }
-    }
+  //       // Format as Netscape cookie line
+  //       netscapeFormatCookies += `${domain}    TRUE    ${path}    ${secure}    ${expires}    ${name}    ${value}\n`;
+  //     }
+  //   }
 
-    return netscapeFormatCookies;
-  };
+  //   return netscapeFormatCookies;
+  // };
   const handlePostCookies = async () => {
     try {
       // const formatedCookies = formatCookiesToNetscape(cookies);
@@ -80,8 +83,8 @@ const YouTubeLogin = () => {
   // Fetch cookies on button click (can be used for logging in or checking cookies)
   const handleFetchCookies = async () => {
     const fetchedCookies = await fetchCookies(); // Get cookies for the given URL
-    console.log(JSON.stringify(fetchedCookies));
-    console.log(formatCookiesToNetscape(JSON.parse(JSON.stringify(fetchedCookies))));
+    // console.log(JSON.stringify(fetchedCookies));
+    // console.log(formatCookiesToNetscape(JSON.parse(JSON.stringify(fetchedCookies))));
     setCookies(JSON.stringify(fetchedCookies)); // Save cookies to state
   };
 
@@ -92,7 +95,9 @@ const YouTubeLogin = () => {
         <View style={styles.loggedInContainer}>
           <Text style={styles.title}>Current Cookies:</Text>
           <ScrollView style={styles.cookiesTextContainer}>
-            <Text style={styles.cookiesText}>{cookies ? cookies : 'No cookies saved'}</Text>
+            <Text style={styles.cookiesText}>
+              {cookies ? cookies : 'No cookies saved'}
+            </Text>
           </ScrollView>
           <Button title="Open WebView" onPress={openWebView} />
           <Button title="Fetch Cookies" onPress={handleFetchCookies} />
@@ -113,7 +118,10 @@ const YouTubeLogin = () => {
       {isWebViewOpen && (
         <View style={styles.buttonContainer}>
           <Button title="Close WebView" onPress={closeWebView} color="red" />
-          <Button title="Save Cookies" onPress={() => alert('Cookies saved: ' + cookies)} />
+          <Button
+            title="Save Cookies"
+            onPress={() => alert('Cookies saved: ' + cookies)}
+          />
           <Button title="Post Cookies" onPress={handlePostCookies} />
         </View>
       )}

@@ -35,7 +35,7 @@ export interface SavedTrackType {
         spotifyId: string;
         youtubeId: string;
         title: string;
-        publish_date: string;
+        publish_date: Date;
         images: ImageSourcePropType[];
         description: string;
     }[];

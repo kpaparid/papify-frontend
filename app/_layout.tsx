@@ -33,7 +33,7 @@ export default function RootLayout() {
   return (
     <Provider store={store}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <View style={{ height: 35, width: '100%', backgroundColor: 'black' }}></View>
+        {/* <View style={{ height: 35, width: '100%', backgroundColor: 'black' }}></View> */}
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />

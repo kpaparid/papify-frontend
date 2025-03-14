@@ -4,6 +4,7 @@ import { useNavigation } from 'expo-router';
 import React, { ReactNode, useState } from 'react';
 import { searchArray } from './../../utils/helpers';
 import {
+  ActivityIndicator,
   Dimensions,
   FlatList,
   Image,
@@ -46,7 +47,10 @@ export default function List({
   defaultTab,
   buttonTabStyle,
   onRefresh,
+  loaded,
+  onImageClick,
 }: {
+  loaded?: boolean;
   image?: ImageSourcePropType;
   backgroundImage?: ImageSourcePropType;
   title?: string;
@@ -59,6 +63,7 @@ export default function List({
   buttonTabStyle?: boolean;
   defaultTab?: number;
   onRefresh?: () => void | Promise<void>;
+  onImageClick?: () => void | Promise<void>;
   tabs?: {
     title?: string;
     onSave?: (id: string) => void | Promise<void>;
@@ -79,7 +84,15 @@ export default function List({
       labels?: {
         text: string;
         isActive: boolean;
-        onClick?: ({ id, category, value }: { id: string; category: string; value: boolean }) => void | Promise<void>;
+        onClick?: ({
+          id,
+          category,
+          value,
+        }: {
+          id: string;
+          category: string;
+          value: boolean;
+        }) => void | Promise<void>;
       }[];
     }[];
   }[];
@@ -108,15 +121,46 @@ export default function List({
   }, []);
   const data =
     search && searchText && tabs && searchKeys
-      ? searchArray(searchText, tabs[activeTabIndex].items, searchKeys).map(({ item }) => item)
+      ? searchArray(searchText, tabs[activeTabIndex].items, searchKeys).map(
+          ({ item }) => item,
+        )
       : tabs?.[activeTabIndex]?.items || [];
 
+  if (loaded !== undefined && !loaded) {
+    return (
+      <ActivityIndicator
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+        }}
+        color="rgba(255, 255, 255, 0.3)"
+        size="large"
+      />
+    );
+  }
   return (
-    <ImageBackground source={{ uri: backgroundImage }} style={styles.container} blurRadius={150}>
-      <BlurView intensity={125} blurReductionFactor={4} style={StyleSheet.absoluteFill} tint="dark" />
+    <ImageBackground
+      source={{ uri: backgroundImage }}
+      style={[styles.container, !backgroundImage && { backgroundColor: '#000' }]}
+      blurRadius={150}
+    >
+      {backgroundImage && (
+        <BlurView
+          intensity={125}
+          blurReductionFactor={4}
+          style={StyleSheet.absoluteFill}
+          tint="dark"
+        />
+      )}
 
       <SafeAreaView style={styles.content}>
-        <ScrollView refreshControl={onRefresh && <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
+        <ScrollView
+          refreshControl={
+            onRefresh && <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
           <View>
             <View style={styles.header}>
               <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -131,7 +175,13 @@ export default function List({
 
             {image && (
               <View style={styles.albumContainer}>
-                <Image source={{ uri: image }} style={styles.albumArt} resizeMode="cover" />
+                <TouchableOpacity onPress={onImageClick}>
+                  <Image
+                    source={{ uri: image }}
+                    style={styles.albumArt}
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
               </View>
             )}
 
@@ -141,19 +191,31 @@ export default function List({
                   <Text style={styles.title}>{title}</Text>
                   {onAdd && (
                     <TouchableOpacity style={styles.addButton} onPress={onAdd}>
-                      <Ionicons name="add" size={20} color="#fff" style={styles.addIcon} />
+                      <Ionicons
+                        name="add"
+                        size={20}
+                        color="#fff"
+                        style={styles.addIcon}
+                      />
                       <Text style={styles.addButtonText}>Add Collection</Text>
                     </TouchableOpacity>
                   )}
                 </View>
               )}
               {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-              {description && <Text style={styles.description}>{description?.join(' - ')}</Text>}
+              {description && (
+                <Text style={styles.description}>{description?.join(' - ')}</Text>
+              )}
             </View>
           </View>
           {search && (
             <View style={styles.searchContainer}>
-              <Ionicons name="search" size={20} color="rgba(255, 255, 255, 0.5)" style={styles.searchIcon} />
+              <Ionicons
+                name="search"
+                size={20}
+                color="rgba(255, 255, 255, 0.5)"
+                style={styles.searchIcon}
+              />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search collections..."
@@ -180,8 +242,10 @@ export default function List({
                     disabled={searchText !== null}
                     style={[
                       buttonTabStyle ? styles.buttonTab : styles.tab,
-                      activeTabIndex === index && (buttonTabStyle ? styles.activeButton : styles.activeTab),
-                      searchText !== null && (buttonTabStyle ? styles.disabledButton : styles.disabledTab),
+                      activeTabIndex === index &&
+                        (buttonTabStyle ? styles.activeButton : styles.activeTab),
+                      searchText !== null &&
+                        (buttonTabStyle ? styles.disabledButton : styles.disabledTab),
                     ]}
                     onPress={() => setActiveTabIndex(index)}
                   >
@@ -189,7 +253,10 @@ export default function List({
                       style={[
                         styles.tabText,
                         buttonTabStyle && styles.buttonText,
-                        activeTabIndex === index && (buttonTabStyle ? styles.activeButtonText : styles.activeTabText),
+                        activeTabIndex === index &&
+                          (buttonTabStyle
+                            ? styles.activeButtonText
+                            : styles.activeTabText),
                       ]}
                     >
                       {tab.title}
@@ -267,10 +334,13 @@ const styles = StyleSheet.create({
   buttonContainer: {
     display: 'flex',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
     paddingHorizontal: 16,
     marginTop: 10,
     marginBottom: 5,
+    maxWidth: '100%',
+    overflow: 'scroll',
   },
   buttonTab: {
     paddingVertical: 5,
@@ -323,10 +393,11 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    paddingTop: 45,
     backgroundColor: '#fff',
     width: '100%',
     // height: '90%',
-    height: '100%',
+    height: SCREEN_HEIGHT + 45,
   },
   content: {
     flex: 1,
@@ -337,7 +408,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     marginTop: 0,
-    paddingTop: Platform.OS === 'android' ? 20 : 0,
+    // paddingTop: Platform.OS === 'android' ? 20 : 0,
   },
   albumContainer: {
     alignItems: 'center',
