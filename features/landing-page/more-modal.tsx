@@ -9,17 +9,32 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 
 export function MoreModal({
   isVisible,
   onClose,
-  onMoveFiles,
+  actions,
 }: {
   isVisible: boolean;
   onClose: () => void;
-  onMoveFiles: () => void;
+  actions: {
+    id: string;
+    text: string;
+    onSubmit: () => Promise<void>;
+  }[];
 }) {
+  const [loading, setLoading] = useState<string[]>([]);
+  const handleSubmit = async (index: number) => {
+    if (actions[index]) {
+      const { id, onSubmit } = actions[index];
+      setLoading(old => [...old, id]);
+      await onSubmit();
+      setLoading(old => old.filter(item => item !== id));
+      actions.length === 1 && onClose();
+    }
+  };
   return (
     <Modal
       animationType="slide"
@@ -38,9 +53,32 @@ export function MoreModal({
               <Ionicons name="close" size={24} color="#a1a1aa" />
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.createButton} onPress={onMoveFiles}>
-            <Text style={styles.createButtonText}>Create Albums</Text>
-          </TouchableOpacity>
+          {actions.map(({ id, text }, index) => (
+            <TouchableOpacity
+              key={id}
+              style={styles.createButton}
+              onPress={loading.includes(id) ? undefined : () => handleSubmit(index)}
+            >
+              <View
+                style={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  gap: 10,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {loading.includes(id) && (
+                  <ActivityIndicator
+                    color="white"
+                    size="small"
+                    animating={loading.includes(id)}
+                  />
+                )}
+                <Text style={styles.createButtonText}>{text}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -86,6 +124,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#3f3f46',
     borderRadius: 8,
     padding: 16,
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
   },
   createButtonText: {

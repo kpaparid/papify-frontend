@@ -85,8 +85,8 @@ export default function Home({ mode }: { mode: boolean }) {
   return (
     <ScrollView
       /*************  ✨ Codeium Command 🌟  *************/
-      style={{ backgroundColor: '#060c12' }}
-      // style={{ backgroundColor: '#09131d' }}
+      style={{ backgroundColor: '#09131d' }}
+      // style={{ backgroundColor: '#0d1b2a' }}
       /******  e8e3a61d-06f8-4508-b6b7-50138998334b  *******/
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
@@ -115,7 +115,7 @@ export default function Home({ mode }: { mode: boolean }) {
           <TextInput
             style={styles.searchInput}
             placeholder="Search tracks, artists, albums, or playlists..."
-            placeholderTextColor="#777f87"
+            placeholderTextColor="#a5b3c0"
             onChangeText={handleSearchChange}
             submitBehavior="blurAndSubmit"
             onSubmitEditing={handleSearch}
@@ -203,7 +203,7 @@ export default function Home({ mode }: { mode: boolean }) {
                         justifyContent: 'center',
                         alignItems: 'center',
                         borderRadius: 8,
-                        backgroundColor: tabView === 'card' ? '#09131d' : '#0d1b2a',
+                        backgroundColor: tabView === 'card' ? '#0c1928' : '#0d1b2a',
                         width: 32,
                         height: 32,
                       }}
@@ -226,7 +226,7 @@ export default function Home({ mode }: { mode: boolean }) {
                         justifyContent: 'center',
                         alignItems: 'center',
                         borderRadius: 8,
-                        backgroundColor: tabView === 'list' ? '#09131d' : '#0d1b2a',
+                        backgroundColor: tabView === 'list' ? '#0c1928' : '#0d1b2a',
                         width: 32,
                         height: 32,
                       }}
@@ -263,6 +263,7 @@ export default function Home({ mode }: { mode: boolean }) {
                       <NavButton
                         title={collections.byId[collectionId].name}
                         subtitle={`${collections.byId[collectionId].tracks.length} tracks`}
+                        subtitle2={`${collections.byId[collectionId].tracks.length - deviceAlbums.byId[collectionId].missingIds.length}/${collections.byId[collectionId].tracks.length} tracks`}
                         onPress={() => onCollectionClick(collectionId)}
                         nestedIcon={['pencil', 'trash-outline']}
                         centered={tabView === 'card'}
@@ -325,7 +326,7 @@ const IconButton = ({
         padding: 5,
         paddingVertical: 15,
         borderRadius: 10,
-        backgroundColor: '#09131d',
+        backgroundColor: '#0d1b2a',
         borderColor: '#0b1825',
         borderWidth: 1,
         flex: 1,
@@ -366,6 +367,7 @@ const IconButton = ({
 const NavButton = ({
   title,
   subtitle,
+  subtitle2,
   onPress,
   onNestedPress,
   nestedIcon,
@@ -374,6 +376,7 @@ const NavButton = ({
 }: {
   title: string;
   subtitle: string;
+  subtitle2: string;
   onPress?: () => void;
   onNestedPress?: (() => void | Promise<void>)[];
   nestedIcon?: (keyof typeof Ionicons.glyphMap)[];
@@ -404,7 +407,7 @@ const NavButton = ({
             {title}
           </Text>
           <Text style={[styles.collectionTracks, , centered && { textAlign: 'center' }]}>
-            {subtitle}
+            {centered ? subtitle : subtitle2}
           </Text>
         </View>
         {!centered && onNestedPress && (
@@ -416,12 +419,12 @@ const NavButton = ({
                   disabled={nestedDisabled}
                 >
                   {loading ? (
-                    <ActivityIndicator size={'small'} color="rgba(255,255,255,0.3)" />
+                    <ActivityIndicator size={'small'} color="#a5b3c0" />
                   ) : (
                     <Ionicons
                       name={icon}
-                      size={20}
-                      color="#666"
+                      size={18}
+                      color="#a5b3c0"
                       style={(styles.playButton, { opacity: nestedDisabled ? 0.5 : 1 })}
                     />
                   )}
@@ -471,12 +474,12 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: '#777f87',
+    color: '#a5b3c0',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#09131d',
+    backgroundColor: '#0d1b2a',
     borderColor: '#0b1825',
     borderWidth: 1,
     borderRadius: 16,
@@ -512,7 +515,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#09131d',
+    backgroundColor: '#0d1b2a',
     borderColor: '#0b1825',
     borderWidth: 1,
     borderRadius: 12,
@@ -526,8 +529,8 @@ const styles = StyleSheet.create({
   },
   collectionTracks: {
     fontSize: 14,
-    color: '#777f87',
-    marginTop: 4,
+    color: '#a5b3c0',
+    marginTop: 0,
   },
   playButton: {
     padding: 12,

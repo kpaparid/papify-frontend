@@ -20,20 +20,12 @@ const TITLE_FONT_SIZE = 16;
 const ARTIST_FONT_SIZE = 14;
 const DESCRIPTION_FONT_SIZE = 14;
 
-export default function MediaPlayer({
-  title,
-  artists,
-  image,
-  loading,
-  isLoading,
-  isPlaying,
-  currentTime,
-  duration,
-  isAdvertisement,
-  onClick,
-  togglePlay,
-  onDismiss,
+import { useNavigationState } from '@react-navigation/native';
+import { useSegments } from 'expo-router';
+
+export default function MediaPlayerWrapper({
   renderPlayer,
+  ...props
 }: {
   title: string;
   artists: string[];
@@ -50,35 +42,72 @@ export default function MediaPlayer({
   renderPlayer?: () => JSX.Element;
 }) {
   return (
+    <>
+      <View style={[styles.albumContainer, { display: 'none' }]}>{renderPlayer?.()}</View>
+      <MediaPlayer {...props} />
+    </>
+  );
+}
+
+function MediaPlayer({
+  title,
+  artists,
+  image,
+  loading,
+  isLoading,
+  isPlaying,
+  currentTime,
+  duration,
+  isAdvertisement,
+  onClick,
+  togglePlay,
+  onDismiss,
+}: {
+  title: string;
+  artists: string[];
+  image: string;
+  loading: boolean;
+  isLoading: boolean;
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  isAdvertisement?: boolean;
+  onClick: () => void;
+  togglePlay: () => void;
+  onDismiss: () => void;
+}) {
+  // This function checks the current active tab index in a Tab Navigator
+  const segments = useSegments();
+  const [tab1, tab2] = segments;
+
+  const defaultTabColoring = !tab2 || tab2 === 'collection';
+
+  console.log('Current Tab Index:', tab2);
+
+  return (
     <View
       style={{
         position: 'absolute',
         left: 0,
         right: 0,
         bottom: 0,
-        // height: 80,
-        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        // height: 80,09131d
+        // backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        backgroundColor: defaultTabColoring && '#112335',
       }}
     >
       <SwipeToDismiss onDismiss={onDismiss}>
         <TouchableOpacity onPress={onClick}>
-          <View style={{ borderTopColor: 'rgba(0, 0, 0, 0.05)', borderTopWidth: 0.5 }}>
-            <ImageBackground
-              source={{ uri: image }}
-              style={{ paddingVertical: 5 }}
-              blurRadius={150}
+          <View
+            style={{
+              borderTopColor: 'rgba(0, 0, 0, 1)',
+              borderTopWidth: 1,
+            }}
+          >
+            <ImageWrapper
+              style={{ backgroundColor: defaultTabColoring && '#1b2837' }}
+              image={!defaultTabColoring && image}
             >
-              {image && (
-                <BlurView
-                  intensity={125}
-                  blurReductionFactor={4}
-                  style={StyleSheet.absoluteFill}
-                  tint="dark"
-                />
-              )}
-              <View style={[styles.albumContainer, { display: 'none' }]}>
-                {renderPlayer?.()}
-              </View>
               <View style={styles.songInfo}>
                 <Image source={{ uri: image }} style={styles.thumbnail} />
                 <View style={styles.textInfo}>
@@ -90,11 +119,21 @@ export default function MediaPlayer({
                 {isLoading || loading ? (
                   <ActivityIndicator
                     size="large"
-                    color="hsl(240 6% 40%)"
+                    color={defaultTabColoring ? '#1c3b5a' : 'hsl(240 6% 40%)'}
                     style={styles.loader}
                   />
                 ) : (
-                  <TouchableOpacity style={styles.playButton} onPress={togglePlay}>
+                  <TouchableOpacity
+                    style={[
+                      styles.playButton,
+                      {
+                        backgroundColor: defaultTabColoring
+                          ? '#1c3b5a'
+                          : 'hsl(240 6% 23%)',
+                      },
+                    ]}
+                    onPress={togglePlay}
+                  >
                     <Feather name={isPlaying ? 'pause' : 'play'} size={20} color="#fff" />
                   </TouchableOpacity>
                 )}
@@ -131,13 +170,51 @@ export default function MediaPlayer({
                   />
                 </View>
               </View>
-            </ImageBackground>
+            </ImageWrapper>
           </View>
         </TouchableOpacity>
       </SwipeToDismiss>
     </View>
   );
 }
+export const ImageWrapper = ({ children, image, style }) => {
+  if (!image)
+    return (
+      <View
+        style={[
+          {
+            paddingVertical: 5,
+            backgroundColor: '#09131d',
+          },
+          style,
+        ]}
+      >
+        {children}
+      </View>
+    );
+  return (
+    <ImageBackground
+      source={{ uri: image }}
+      style={[
+        {
+          paddingVertical: 5,
+        },
+        style,
+      ]}
+      blurRadius={125}
+    >
+      {image && (
+        <BlurView
+          intensity={125}
+          blurReductionFactor={4}
+          style={StyleSheet.absoluteFill}
+          tint="dark"
+        />
+      )}
+      {children}
+    </ImageBackground>
+  );
+};
 
 const styles = StyleSheet.create({
   playButton: {
@@ -145,7 +222,6 @@ const styles = StyleSheet.create({
     display: 'flex',
     aspectRatio: 1,
     height: '100%',
-    backgroundColor: 'hsl(240 6% 20%)',
     borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',

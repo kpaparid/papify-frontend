@@ -7,13 +7,22 @@ import { useCollectionActions } from './hooks/useCollectionActions';
 import { useFetchCollectionTracks } from './hooks/useFetchCollections';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import useApi from '@/hooks/useBanana';
+import { removeTrack } from '@/api/callbacks';
 
 export default function Collection() {
   const { id } = useLocalSearchParams();
   const [addModalIsVisible, setAddModalIsVisible] = React.useState(false);
-  // const [moreModalIsVisible, setMoreModalIsVisible] = React.useState(false);
+  const [moreModalIsVisible, setMoreModalIsVisible] = React.useState<{
+    visible: boolean;
+    activeTabIndex: number | undefined;
+  }>({
+    visible: false,
+    activeTabIndex: undefined,
+  });
   const { collection, tracks, image, deviceAlbums, loading, error, fetchData } =
     useFetchCollectionTracks();
+  const { onDeleteAllTracks, syncDeviceTracks } = useApi();
   const {
     onDelete,
     onDownload,
@@ -67,7 +76,7 @@ export default function Collection() {
     emptyComponent: (
       <View style={styles.container}>
         <View style={styles.iconContainer}>
-          <Ionicons name="library-outline" size={32} color={'#ffffff80'} />
+          <Ionicons name="library-outline" size={32} color={'#a5b3c0'} />
         </View>
         <View style={styles.textContainer}>
           <Text style={styles.title}>No tracks found</Text>
@@ -75,12 +84,15 @@ export default function Collection() {
         </View>
       </View>
     ),
-    items: tracksByCollection[collectionId].map(track => ({
+    items: tracksByCollection[collectionId as 'All'].map(track => ({
       id: track.id,
       isDownloaded: track.storage?.storageId,
-      downloadDisabled:
-        !allDeviceTracks.missingIds.includes(track.id) || !track.storage?.storageId,
+      downloadDisabled: true,
+      downloadHidden: !deviceAlbums.byId[collectionId].missingIds.includes(track.id),
+      deleteDisabled: track.downloading,
+      deleteHidden: track.downloading,
       loadingDownload: track.downloading,
+      // loadingHidden: track.downloading,
       title: track.spotify.name,
       categories: track.collectionIds,
       mergedCategories: track.collectionIds.join(', '),
@@ -108,17 +120,37 @@ export default function Collection() {
         })),
     })),
   }));
-
   return (
     <>
+      <MoreModal
+        isVisible={moreModalIsVisible.visible}
+        onClose={() =>
+          setMoreModalIsVisible({ visible: false, activeTabIndex: undefined })
+        }
+        actions={[
+          {
+            id: 'delete-all',
+            text: 'Delete Tab Tracks',
+            onSubmit: () => {
+              return onDeleteAllTracks(
+                tabs[moreModalIsVisible.activeTabIndex as number].items.map(
+                  ({ id }) => id,
+                ),
+              ).then(() => syncDeviceTracks());
+            },
+          },
+        ]}
+      />
       <List
+        onMore={({ activeTabIndex }: { activeTabIndex: number }) =>
+          setMoreModalIsVisible({ visible: true, activeTabIndex })
+        }
         title={'Collections'}
         search
         searchKeys={['title', 'mergedCategories', 'mergedArtists']}
         buttonTabStyle
-        backgroundImage={image.loaded && tracks.ids.length > 0 ? image.url : undefined}
+        // backgroundImage={image.loaded && tracks.ids.length > 0 ? image.url : undefined}
         onAdd={() => setAddModalIsVisible(true)}
-        // onMore={() => setMoreModalIsVisible(true)}
         defaultTab={
           tabs.findIndex(tab => tab.title === id) !== -1
             ? tabs.findIndex(tab => tab.title === id)
@@ -132,11 +164,6 @@ export default function Collection() {
         isVisible={addModalIsVisible}
         onClose={() => setAddModalIsVisible(false)}
       />
-      {/* <MoreModal
-        isVisible={moreModalIsVisible}
-        onClose={() => setMoreModalIsVisible(false)}
-        onMoveFiles={handleMoveFiles}
-      /> */}
     </>
   );
 }
@@ -148,7 +175,7 @@ const styles = StyleSheet.create({
     paddingVertical: '20%',
   },
   iconContainer: {
-    backgroundColor: '#18181b66',
+    backgroundColor: '#0d1b2a',
     borderRadius: 50,
     padding: 16,
   },
@@ -157,12 +184,12 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   title: {
-    color: '#e4e4e7',
+    color: 'white',
     fontSize: 20,
     fontWeight: '600',
   },
   description: {
-    color: '#a1a1aa',
+    color: '#a5b3c0',
     fontSize: 16,
     textAlign: 'center',
     marginTop: 8,

@@ -17,13 +17,18 @@ export default function ListItem({
   id,
   title,
   descriptions,
+  defaultColoring,
   imageUrl,
   labels,
   isDownloaded,
   loadingDownload,
   downloadDisabled,
+  downloadHidden,
+  deleteHidden,
+  deleteDisabled,
   onDownload,
   onDelete,
+  loadingHidden = true,
 }: {
   isDownloaded?: boolean;
   onDownload?: (id: string) => Promise<void> | void;
@@ -32,6 +37,10 @@ export default function ListItem({
   onDelete?: (id: string) => Promise<void> | void;
   loadingDownload?: boolean;
   downloadDisabled?: boolean;
+  downloadHidden?: boolean;
+  loadingHidden?: boolean;
+  deleteHidden?: boolean;
+  deleteDisabled?: boolean;
   isSaved?: boolean;
   id: string;
   title: string;
@@ -40,6 +49,7 @@ export default function ListItem({
     text: string;
   }[];
   imageUrl?: string;
+  defaultColoring?: boolean;
   labels?: {
     text: string;
     isActive: boolean;
@@ -133,7 +143,11 @@ export default function ListItem({
         <View style={styles.trackContainer}>
           <View style={styles.trackInfo}>
             <Text
-              style={[styles.trackTitle, !isDownloaded && { opacity: 0.35 }]}
+              style={[
+                styles.trackTitle,
+                !isDownloaded && { opacity: 0.35 },
+                defaultColoring && !isDownloaded && { color: '#a5b3c0' },
+              ]}
               numberOfLines={1}
             >
               {title}
@@ -143,13 +157,21 @@ export default function ListItem({
                 {descriptions?.map(({ icon, text }) => (
                   <View key={text} style={styles.tracksInfo}>
                     {icon && <Ionicons name={icon} size={16} />}
-                    <Text style={styles.trackText}>{text}</Text>
+                    <Text
+                      style={[
+                        styles.trackText,
+                        !isDownloaded && { opacity: 0.35 },
+                        defaultColoring && { color: '#a5b3c0' },
+                      ]}
+                    >
+                      {text}
+                    </Text>
                   </View>
                 ))}
               </View>
             </Text>
             {labels && (
-              <Text style={styles.trackArtist}>
+              <Text style={[styles.trackArtist, { marginTop: 6 }]}>
                 <View style={styles.labelContainer}>
                   {labels.map(({ text, isActive, onClick }, index) => (
                     <TouchableOpacity
@@ -186,61 +208,100 @@ export default function ListItem({
                 disabled={getStatus('save').loading}
               >
                 {getStatus('save').loading ? (
-                  <ActivityIndicator color="rgba(255, 255, 255, 0.3)" />
+                  <ActivityIndicator
+                    color={
+                      defaultColoring
+                        ? 'rgba(165,179,192, 0.3)'
+                        : 'rgba(255, 255, 255, 0.3)'
+                    }
+                  />
                 ) : (
                   <Ionicons
                     name={isSaved ? 'heart' : 'heart-outline'}
                     size={20}
                     color={
-                      isSaved ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)'
+                      !defaultColoring
+                        ? isSaved
+                          ? 'rgba(255, 255, 255, 0.8)'
+                          : 'rgba(255, 255, 255, 0.3)'
+                        : isSaved
+                          ? 'rgba(165,179,192, 0.8)'
+                          : 'rgba(165,179,192, 0.3)'
                     }
                   />
                 )}
               </TouchableOpacity>
             </View>
           )}
-          {onDownload && typeof onDownload !== 'undefined' && (
+          {onDownload && typeof onDownload !== 'undefined' && !downloadHidden && (
             <View style={styles.trackActions}>
               <TouchableOpacity
                 onPress={handleDownload}
-                style={[styles.saveButton, downloadDisabled && { opacity: 0.4 }]}
+                style={[styles.saveButton]}
                 disabled={getStatus('download').loading || downloadDisabled}
               >
                 {getStatus('download').loading ? (
-                  <ActivityIndicator color="rgba(255, 255, 255, 0.3)" />
+                  <ActivityIndicator
+                    color={
+                      defaultColoring
+                        ? 'rgba(165,179,192, 0.3)'
+                        : 'rgba(255, 255, 255, 0.3)'
+                    }
+                  />
                 ) : (
                   <Ionicons
                     name="download-outline"
                     size={20}
                     color={
-                      isSaved ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)'
+                      !defaultColoring
+                        ? !downloadDisabled
+                          ? 'rgba(255, 255, 255, 0.8)'
+                          : 'rgba(255, 255, 255, 0.3)'
+                        : !downloadDisabled
+                          ? 'rgba(165,179,192, 0.8)'
+                          : 'rgba(165,179,192, 0.3)'
                     }
                   />
                 )}
               </TouchableOpacity>
             </View>
           )}
-          {!loadingDownload && onDelete && typeof onDelete !== 'undefined' && (
-            <View style={styles.trackActions}>
-              <TouchableOpacity
-                onPress={handleDelete}
-                style={styles.saveButton}
-                disabled={getStatus('delete').loading}
-              >
-                {getStatus('delete').loading ? (
-                  <ActivityIndicator color="rgba(255, 255, 255, 0.3)" />
-                ) : (
-                  <Ionicons
-                    name={'trash-outline'}
-                    size={20}
-                    color={
-                      isSaved ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)'
-                    }
-                  />
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
+          {!loadingDownload &&
+            onDelete &&
+            typeof onDelete !== 'undefined' &&
+            !deleteHidden && (
+              <View style={styles.trackActions}>
+                <TouchableOpacity
+                  onPress={handleDelete}
+                  style={styles.saveButton}
+                  disabled={getStatus('delete').loading || deleteDisabled}
+                >
+                  {getStatus('delete').loading ? (
+                    <ActivityIndicator
+                      color={
+                        defaultColoring
+                          ? 'rgba(165,179,192, 0.3)'
+                          : 'rgba(255, 255, 255, 0.3)'
+                      }
+                    />
+                  ) : (
+                    <Ionicons
+                      name={'trash-outline'}
+                      size={20}
+                      color={
+                        !defaultColoring
+                          ? !deleteDisabled
+                            ? 'rgba(255, 255, 255, 0.8)'
+                            : 'rgba(255, 255, 255, 0.3)'
+                          : !deleteDisabled
+                            ? 'rgba(165,179,192, 0.8)'
+                            : 'rgba(165,179,192, 0.3)'
+                      }
+                    />
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
           {loadingDownload && (
             <View style={styles.trackActions}>
               <TouchableOpacity
@@ -248,13 +309,40 @@ export default function ListItem({
                 style={styles.saveButton}
                 disabled={true}
               >
-                <ActivityIndicator color="rgba(255, 255, 255, 0.3)" />
+                <ActivityIndicator
+                  color={
+                    defaultColoring
+                      ? 'rgba(165,179,192, 0.3)'
+                      : 'rgba(255, 255, 255, 0.3)'
+                  }
+                />
               </TouchableOpacity>
             </View>
           )}
           {getStatus('click').loading ? (
-            <ActivityIndicator color="rgba(255, 255, 255, 0.3)" />
+            <ActivityIndicator
+              color={
+                !defaultColoring ? 'rgba(255, 255, 255, 0.3)' : 'rgba(165,179,192, 0.3)'
+              }
+            />
           ) : null}
+          {!loadingHidden && (
+            <View style={styles.trackActions}>
+              <TouchableOpacity
+                // onPress={handleDownload}
+                style={styles.saveButton}
+                disabled={true}
+              >
+                <ActivityIndicator
+                  color={
+                    defaultColoring
+                      ? 'rgba(165,179,192, 0.3)'
+                      : 'rgba(255, 255, 255, 0.3)'
+                  }
+                />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </View>
     </TouchableOpacity>
@@ -283,8 +371,9 @@ const styles = StyleSheet.create({
     // borderStyle: 'solid',
     paddingVertical: 5,
     paddingHorizontal: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    color: 'rgba(0, 0, 0, 0.4)',
+    // backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: '#1b2837',
+    color: '#d4d7d9',
     // color: '#000',
     // backgroundColor: 'rgba(0, 0, 0, 0.25)',
     // opacity: 0.5,

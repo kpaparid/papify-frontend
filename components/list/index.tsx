@@ -21,6 +21,7 @@ import {
   View,
 } from 'react-native';
 import ListItem from './list-item';
+import { ImageWrapper } from '../media-player';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -59,7 +60,7 @@ export default function List({
   search?: boolean;
   searchKeys?: string[];
   onAdd?: () => void | Promise<void>;
-  onMore?: () => void | Promise<void>;
+  onMore?: ({ activeTabIndex }: { activeTabIndex: number }) => void | Promise<void>;
   buttonTabStyle?: boolean;
   defaultTab?: number;
   onRefresh?: () => void | Promise<void>;
@@ -140,21 +141,9 @@ export default function List({
       />
     );
   }
-  return (
-    <ImageBackground
-      source={{ uri: backgroundImage }}
-      style={[styles.container, !backgroundImage && { backgroundColor: '#000' }]}
-      blurRadius={150}
-    >
-      {backgroundImage && (
-        <BlurView
-          intensity={125}
-          blurReductionFactor={4}
-          style={StyleSheet.absoluteFill}
-          tint="dark"
-        />
-      )}
 
+  return (
+    <ImageWrapper image={backgroundImage} style={[styles.container]}>
       <SafeAreaView style={styles.content}>
         <ScrollView
           refreshControl={
@@ -167,7 +156,7 @@ export default function List({
                 <Feather name="chevron-left" size={32} color="#fff" />
               </TouchableOpacity>
               {onMore && (
-                <TouchableOpacity onPress={onMore}>
+                <TouchableOpacity onPress={() => onMore({ activeTabIndex })}>
                   <Feather name="more-horizontal" size={24} color="#fff" />
                 </TouchableOpacity>
               )}
@@ -190,7 +179,10 @@ export default function List({
                 <View style={[styles.titleContainer, onAdd && styles.titleStart]}>
                   <Text style={styles.title}>{title}</Text>
                   {onAdd && (
-                    <TouchableOpacity style={styles.addButton} onPress={onAdd}>
+                    <TouchableOpacity
+                      style={[styles.addButton, !image && { backgroundColor: '#0d1b2a' }]}
+                      onPress={onAdd}
+                    >
                       <Ionicons
                         name="add"
                         size={20}
@@ -209,7 +201,9 @@ export default function List({
             </View>
           </View>
           {search && (
-            <View style={styles.searchContainer}>
+            <View
+              style={[styles.searchContainer, !image && { backgroundColor: '#0d1b2a' }]}
+            >
               <Ionicons
                 name="search"
                 size={20}
@@ -219,7 +213,7 @@ export default function List({
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search collections..."
-                placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                placeholderTextColor={image ? 'rgba(255, 255, 255, 0.5)' : '#a5b3c0'}
                 onChangeText={handleSearchChange}
                 value={searchText || ''}
               />
@@ -242,6 +236,7 @@ export default function List({
                     disabled={searchText !== null}
                     style={[
                       buttonTabStyle ? styles.buttonTab : styles.tab,
+                      !image && { backgroundColor: '#1b2837' },
                       activeTabIndex === index &&
                         (buttonTabStyle ? styles.activeButton : styles.activeTab),
                       searchText !== null &&
@@ -252,6 +247,7 @@ export default function List({
                     <Text
                       style={[
                         styles.tabText,
+                        { color: image ? 'rgba(255, 255, 255, 0.5)' : '#a5b3c0' },
                         buttonTabStyle && styles.buttonText,
                         activeTabIndex === index &&
                           (buttonTabStyle
@@ -271,6 +267,7 @@ export default function List({
                 : data.map((item, index) => (
                     <ListItem
                       {...item}
+                      defaultColoring={!image}
                       onSave={tabs[activeTabIndex].onSave}
                       onDownload={tabs[activeTabIndex].onDownload}
                       onClick={tabs[activeTabIndex].onClick}
@@ -281,7 +278,7 @@ export default function List({
           </View>
         </ScrollView>
       </SafeAreaView>
-    </ImageBackground>
+    </ImageWrapper>
   );
 }
 
@@ -309,7 +306,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     // backgroundColor: '#2c2c2e',
     marginHorizontal: 16,
     marginBottom: 12,
@@ -394,7 +391,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 45,
-    backgroundColor: '#fff',
+    // backgroundColor: '#fff',
     width: '100%',
     // height: '90%',
     height: SCREEN_HEIGHT + 45,

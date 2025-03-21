@@ -7,7 +7,7 @@ import { PlaylistType } from '@/types/playlist-type';
 import { SavedTrackType } from '@/types/saved-track-type';
 import { SearchResultType } from '@/types/search-types';
 import { YtTrackType } from '@/types/ytTrack-type';
-import { batchDownload } from '@/utils/helpers';
+import { batchDownload, trackToFileName } from '@/utils/helpers';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 
@@ -116,6 +116,15 @@ export function deleteTrack(spotifyId: string): Promise<string> {
 export function saveTrack(spotifyId: string): Promise<SavedTrackType> {
   return postRequest(`/tracks/${spotifyId}/save`);
 }
+
+export function toggleTracksSave(
+  spotifyIds: string[],
+  save: boolean,
+): Promise<SavedTrackType[]> {
+  if (save) return putRequest(`/tracks/${spotifyIds}/save`);
+  return deleteRequest(`/tracks/${spotifyIds}/delete`);
+}
+
 export function toggleTrackCollection(
   spotifyId: string,
   collectionId: string,
@@ -167,9 +176,9 @@ const moveMp3 = async (fileName: string) => {
     }
 
     // Ensure the file exists
-    console.log('Internal URI:', internalUri);
+    // console.log('Internal URI:', internalUri);
     const fileInfo = await FileSystem.getInfoAsync(internalUri);
-    console.log('File Info:', fileInfo);
+    // console.log('File Info:', fileInfo);
 
     if (!fileInfo.exists) {
       Alert.alert('File Not Found', 'The specified file does not exist.');
@@ -206,44 +215,11 @@ const moveMp3 = async (fileName: string) => {
     Alert.alert('Error', 'Failed to move the file.' + fileName);
   }
 };
-export async function getDeviceTracks(): Promise<string[]> {
-  // Request permission to access media library
-  const { status } = await MediaLibrary.requestPermissionsAsync();
-  if (status !== 'granted') {
-    console.log('Permission to access media library denied');
-    return [];
-  }
-
-  // Fetch all albums
-  const papifyAlbum = await MediaLibrary.getAlbumAsync('Papify All');
-
-  if (!papifyAlbum) {
-    console.log('Album "Papify" not found');
-    return [];
-  }
-  console.log('Papify album found: ', papifyAlbum);
-
-  // Fetch media from the "Papify" album
-  const media = await MediaLibrary.getAssetsAsync({
-    album: papifyAlbum,
-    mediaType: MediaLibrary.MediaType.audio,
-  });
-
-  console.log('Media fetched: ', media);
-
-  // Add filename to each asset for reference
-  const assetsWithNames = media.assets.map(({ filename }) => filename);
-
-  return assetsWithNames;
-}
 
 export async function createDeviceAlbums(deviceAlbums: {
   byId: { [id: string]: DeviceAlbumType };
   ids: string[];
 }) {
-  console.log('Starting to move files...', deviceAlbums);
-
-  // 1. Request Permissions
   const { status } = await MediaLibrary.requestPermissionsAsync();
   if (status !== 'granted') {
     console.error('Permission to access media library denied.');
@@ -251,107 +227,117 @@ export async function createDeviceAlbums(deviceAlbums: {
   }
 
   try {
-    // 2. Check or Create Parent Album ('Papify')
+    // 1. Get Existing Albums
+    const allAlbums = await MediaLibrary.getAlbumsAsync();
+    const papifyAlbums = allAlbums.filter(album => album.title.startsWith('Papify '));
+    const existingAlbumNames = new Set(
+      deviceAlbums.ids.map(id => `Papify ${deviceAlbums.byId[id].name}`),
+    );
+
+    // 2. Delete Unnecessary Albums
+    const albumIdsToDelete = papifyAlbums
+      .filter(album => !existingAlbumNames.has(album.title))
+      .map(album => album.id);
+    if (albumIdsToDelete.length) {
+      console.log('Deleting albums: ', albumIdsToDelete);
+      await MediaLibrary.deleteAlbumsAsync(albumIdsToDelete);
+    }
+
+    // 3. Ensure 'Papify All' Album Exists
     let papifyAlbum = await MediaLibrary.getAlbumAsync('Papify All');
-    let media = await MediaLibrary.getAssetsAsync({
+    if (!papifyAlbum || deviceAlbums.byId['All'].missingIds.length > 0) {
+      console.log('Downloading missing tracks for Papify All...');
+      const tracks = deviceAlbums.byId['All'].missingIds.map(trackId => ({
+        id: deviceAlbums.byId['All'].byId[trackId].id,
+        filename: deviceAlbums.byId['All'].byId[trackId].storage?.name as string,
+      }));
+      console.log(tracks.map(track => track.filename));
+      await downloadTracks(tracks);
+      papifyAlbum = await MediaLibrary.getAlbumAsync('Papify All');
+      console.log(papifyAlbum);
+    }
+
+    // Fetch media in 'Papify All'
+    const media = await MediaLibrary.getAssetsAsync({
       album: papifyAlbum,
       mediaType: MediaLibrary.MediaType.audio,
     });
 
-    if (!papifyAlbum || deviceAlbums.byId['All'].missingIds.length > 0) {
-      console.log('Creating Papify album...');
-      await downloadTracks(
-        deviceAlbums.byId['All'].missingIds.map(trackId => ({
-          id: deviceAlbums.byId['All'].byId[trackId].id,
-          filename: deviceAlbums.byId['All'].byId[trackId].storage?.name,
-        })),
-      );
-      papifyAlbum = await MediaLibrary.getAlbumAsync('Papify All');
-      media = await MediaLibrary.getAssetsAsync({
-        album: papifyAlbum,
-        mediaType: MediaLibrary.MediaType.audio,
-      });
-    }
-    console.log('Papify album:', papifyAlbum);
-
     if (!media.assets.length) {
-      console.log('No audio files found in Papify album.');
+      console.log('No audio files found in Papify All.');
       return;
     }
-    console.log(Object.values(deviceAlbums.byId['All'].byId));
-    // 4. Process Each Asset
     for (const asset of media.assets) {
-      console.log('Processing asset:', asset.filename);
+      const collections = Object.values(deviceAlbums.byId).filter(
+        ({ name, missingIds = [] }) => name !== 'All' && missingIds.length > 0,
+      );
 
-      // Find matching track
-      const track = Object.values(deviceAlbums.byId['All'].byId).find(t => {
-        return t.storage?.name === asset.filename;
-      }) as TracksCollectionType;
-
-      if (!track) {
-        console.warn('No matching track found for:', asset.filename);
-        continue; // Skip this asset if no match
-      }
-
-      console.log('Found matching track:', track.name);
-
-      // 5. Handle Multiple Collections
-      for (const collectionId of Object.values(deviceAlbums.byId)
-        .filter(({ name, missingIds }) => name !== 'All' && missingIds.includes(track.id))
-        .map(({ name }) => name)) {
-        console.log(`Processing collection ID: ${collectionId}`);
-
-        try {
-          // 5.1 Cache collection album references
-          const albumName = `Papify ${collectionId}`;
+      for (const { name, missingIds } of collections) {
+        const track = Object.values(deviceAlbums.byId[name].byId).find(
+          t => t.storage?.name === asset.filename,
+        );
+        console.log('Found It', track?.id);
+        if (track && missingIds.includes(track.id)) {
+          const albumName = `Papify ${name}`;
           let collectionAlbum = await MediaLibrary.getAlbumAsync(albumName);
 
-          // 5.2 Create collection album if not exists
+          // Create album if it doesn't exist
           if (!collectionAlbum) {
             console.log(`Creating album: ${albumName}`);
             collectionAlbum = await MediaLibrary.createAlbumAsync(
               albumName,
-              asset, // Add the first asset during creation
+              asset,
               false,
             );
           }
 
-          // 5.3 Fetch Media in Collection Album
+          // Check if asset already exists
           const collectionMedia = await MediaLibrary.getAssetsAsync({
             album: collectionAlbum,
             mediaType: MediaLibrary.MediaType.audio,
           });
 
-          // 5.4 Check if the asset already exists in the collection
-          const assetExists = collectionMedia.assets.some(
-            ({ filename }) => filename === asset.filename,
-          );
-
-          if (assetExists) {
-            console.log(`Asset already exists in album ${albumName}: ${asset.filename}`);
-            continue; // Skip adding if already exists
+          if (
+            !collectionMedia.assets.some(({ filename }) => filename === asset.filename)
+          ) {
+            console.log(`Adding ${asset.filename} to album: ${albumName}`);
+            await MediaLibrary.addAssetsToAlbumAsync([asset], collectionAlbum, false);
           }
-
-          // 5.5 Add Asset to Album
-          console.log(`Adding ${asset.filename} to album: ${albumName}`);
-          await MediaLibrary.addAssetsToAlbumAsync(
-            [asset],
-            collectionAlbum,
-            true, // Don't copy the asset
-          );
-          console.log(`Successfully added to album: ${albumName}`);
-        } catch (error) {
-          console.error(
-            `Error processing collection ${collectionId} for ${asset.filename}:`,
-            error,
-          );
         }
       }
     }
 
-    console.log('Finished moving files.');
+    // 6. Cleanup: Remove Tracks Not Belonging to Albums
+    for (const album of papifyAlbums) {
+      console.log('Checking Download of ', album.title);
+      const collectionId = album.title.replace('Papify ', '');
+      const collectionAlbum = deviceAlbums.byId[collectionId];
+      if (!collectionAlbum) {
+        console.warn(`No collection found for album: ${album.title}`);
+        continue;
+      }
+
+      const collectionTracks = await MediaLibrary.getAssetsAsync({
+        album,
+        mediaType: MediaLibrary.MediaType.audio,
+      });
+
+      const tracksToDelete = collectionTracks.assets.filter(asset => {
+        // !Object.values.includes(asset.filename),
+        return !Object.values(collectionAlbum.byId)
+          .map(track => track.storage?.name)
+          .includes(asset.filename);
+      });
+
+      if (tracksToDelete.length) {
+        console.log(`Deleting unneeded tracks from ${collectionId}:`, tracksToDelete);
+        await MediaLibrary.deleteAssetsAsync(tracksToDelete.map(asset => asset.id));
+      }
+    }
+
+    console.log('Finished processing device albums.');
   } catch (error) {
-    console.error('An error occurred during the file-moving process:', error);
+    console.error('Error during the file-moving process:', error);
   }
 }
 
@@ -421,6 +407,7 @@ export async function moveFiles2() {
 export async function checkDeviceTracks(
   collections: CollectionType[],
 ): Promise<DeviceAlbumType[]> {
+  // console.log(collections);
   // Request permission to access media library
   const { status } = await MediaLibrary.requestPermissionsAsync();
   if (status !== 'granted') {
@@ -452,6 +439,7 @@ export async function checkDeviceTracks(
   //   mediaType: ['audio', 'photo', 'video', 'unknown'],
   // });
   // console.log({ media });
+  // console.log({ allAlbums: allAlbums.map(album => album.title) });
   for (const collection of collections) {
     console.log('Checking album Papify', collection.name);
     const papifyAlbum = await MediaLibrary.getAlbumAsync(`Papify ${collection.name}`);
@@ -474,15 +462,27 @@ export async function checkDeviceTracks(
         album: papifyAlbum,
         mediaType: ['photo', 'video', 'unknown', 'audio'],
       });
-      const unknownAssets = unknownMedia.assets.filter(
-        asset =>
-          !(
-            asset.mediaType === 'audio' &&
-            collection.tracks.some(track => track?.storage.name === asset.filename)
-          ),
-      );
+      // console.log(unknownMedia);
+      // console.log(
+      //   'Tracks',
+      //   collection.tracks.map(track => track?.storage?.name),
+      // );
+      // console.log(collection.tracks?.[0]?.storage?.name);
+      const collectionTracks = collection.tracks.map(track => track?.storage?.name);
+      // console.log(collectionTracks);
+      const unknownAssets = unknownMedia.assets.filter(asset => {
+        return asset.mediaType !== 'audio';
+        // return (
+        //   asset.mediaType !== 'audio' ||
+        //   (asset.mediaType === 'audio' &&
+        //     !collection.tracks.some(track => track?.storage.name === asset.filename))
+        // );
+      });
       if (unknownAssets.length > 0) {
-        const idsToDelete = unknownMedia.assets.map(asset => asset.id);
+        const idsToDelete = unknownMedia.assets.map(asset => {
+          console.log('Deleting', asset.filename);
+          return asset.id;
+        });
         await MediaLibrary.deleteAssetsAsync(idsToDelete);
         console.log(`Deleted ${idsToDelete.length} non-audio assets.`);
       } else {
@@ -501,6 +501,7 @@ export async function checkDeviceTracks(
       for (const track of collection.tracks) {
         const trackFilename = track.storage?.name;
         if (!existingTracks.has(trackFilename)) {
+          console.log('Missing track', trackFilename);
           missingIds.push(track.id); // Add missing track ID
         }
       }
@@ -524,42 +525,14 @@ export async function checkDeviceTracks(
   }
 
   // Output results
-  console.log('Ending checkDeviceTracks');
+  console.log(
+    'Ending checkDeviceTracks',
+    collectionsSummary.map(({ name, missingIds }) => ({ name, missingIds })),
+  );
 
   return collectionsSummary;
 }
 
-export async function removeDeviceTrack(track: SavedTrackType, collectionIds: string[]) {
-  // Request permission to access media library
-  const { status } = await MediaLibrary.requestPermissionsAsync();
-  if (status !== 'granted') {
-    console.log('Permission to access media library denied');
-    return 0;
-  }
-  for (const collection of collectionIds) {
-    const papifyAlbum = await MediaLibrary.getAlbumAsync(`Papify ${collection}`);
-    if (!papifyAlbum) {
-      console.log(`Papify ${collection} not found`);
-      return 0;
-    }
-
-    // Fetch media from the "Papify All" album
-    const media = await MediaLibrary.getAssetsAsync({
-      album: papifyAlbum,
-      mediaType: MediaLibrary.MediaType.audio,
-    });
-
-    const existingTracks = new Set([...media.assets.map(({ filename }) => filename)]);
-
-    const trackFilename = track.storage?.name;
-    if (existingTracks.has(trackFilename)) {
-      const asset = media.assets.find(asset => asset.filename === trackFilename);
-      if (asset) {
-        await MediaLibrary.deleteAssetsAsync([asset]);
-      }
-    }
-  }
-}
 export async function postCookies(cookie: string) {
   return postRequest('/yt-cookie', { cookie });
 }

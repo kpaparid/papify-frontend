@@ -1,19 +1,18 @@
 import {
+  checkDeviceTracks,
   deleteCollection,
   deleteTrack,
   getSpotifyAlbum,
   getSpotifyArtist,
   getSpotifyPlaylist,
   getYtTrack,
-  toggleTrackCollection,
   postCollection,
+  putCollection,
+  removeGoogleDriveTrack,
   saveTrack,
   searchSpotify,
-  removeDeviceTrack,
-  getDeviceTracks,
-  checkDeviceTracks,
-  removeGoogleDriveTrack,
-  putCollection,
+  toggleTrackCollection,
+  toggleTracksSave,
 } from '@/api/callbacks';
 import { CollectionType } from '@/types/collection-type';
 import { DeviceAlbumType } from '@/types/device-album-type';
@@ -23,19 +22,19 @@ import {
   addAlbum,
   addArtist,
   addCollection,
-  editCollection,
   addPlaylist,
+  addSavedTrack,
   addSearchResult,
   addYtTrack,
-  addSavedTrack,
   DataStateType,
+  deleteGoogleDriveTrack,
+  editCollection,
   removeCollection,
   removeSavedTrack,
-  toggleCollection,
   setDeviceTracks,
-  deleteGoogleDriveTrack,
   setMediaTrack,
   setMediaTrackLoading,
+  toggleCollection,
 } from '@/utils/redux/dataReducer';
 import { useRouter } from 'expo-router';
 import { ImageSourcePropType } from 'react-native';
@@ -76,6 +75,7 @@ const useApi = () => {
     state.data.ytTracks?.byId,
     state.data.deviceAlbums.byId,
   ]);
+  console.log();
   const dispatch = useDispatch();
   const onAlbumClick = async (id: string) => {
     if (albumIds.includes(id)) return router.push(`/album?id=${id}`);
@@ -188,13 +188,25 @@ const useApi = () => {
   const onToggleSaveTrack = async (itemId: string, value: boolean) => {
     if (value) {
       return await saveTrack(itemId).then(result => {
-        return dispatch(addSavedTrack(result));
+        dispatch(addSavedTrack(result));
+        return syncDeviceTracks();
       });
     } else {
       return await deleteTrack(itemId).then(() => {
         dispatch(removeSavedTrack(itemId));
+        return syncDeviceTracks();
       });
     }
+  };
+  const onSaveAllTracks = async (itemsIds: string[]) => {
+    return toggleTracksSave(itemsIds, true).then(result =>
+      result.forEach(track => dispatch(addSavedTrack(track))),
+    );
+  };
+  const onDeleteAllTracks = async (itemsIds: string[]) => {
+    return toggleTracksSave(itemsIds, false).then(() =>
+      itemsIds.forEach(itemId => dispatch(removeSavedTrack(itemId))),
+    );
   };
   const onCreateCollection = async (title: string) => {
     return await postCollection(title).then(result => dispatch(addCollection(result)));
@@ -259,6 +271,8 @@ const useApi = () => {
     onDeleteGoogleDriveTrack,
     onGoogleDriveClick,
     onEditCollection,
+    onSaveAllTracks,
+    onDeleteAllTracks,
   };
 };
 

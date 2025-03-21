@@ -773,6 +773,7 @@ const dataSlice = createSlice({
           artists: track.spotify.artists,
           query: track.youtube[0].query,
           images: track.spotify.album.images,
+          storage: track.storage,
         });
         state.collection.byId['Uncategorized'].tracks = state.collection.byId[
           'Uncategorized'
@@ -788,6 +789,7 @@ const dataSlice = createSlice({
           artists: track.spotify.artists,
           query: track.youtube[0].query,
           images: track.spotify.album.images,
+          storage: track.storage,
         });
       }
     },
